@@ -4,6 +4,9 @@ This repository contains a set of Go exercises and projects, each focusing on di
 
 ## Projects
 
+### annalys-infiltration
+Solves the **Annalyn's Infiltration** exercise on Exercism. See https://exercism.org/tracks/go/exercises/annalyns-infiltration.
+
 ### collatz-conjecture
 Solves the **Collatz Conjecture** (3n + 1) problem, a famous sequence problem in mathematics. See https://exercism.org/tracks/go/exercises/collatz-conjecture.
 
@@ -27,6 +30,9 @@ Solves the **Two Fer** exercise on Exercism. See https://exercism.org/tracks/go/
 
 ### Useful resources
 
+* Effective Go - https://go.dev/doc/effective_go
+* A Tour of Go - https://go.dev/tour/welcome/1
+* How to Write Go Code - https://go.dev/doc/code
 * Makefile tutorial - https://makefiletutorial.com/
 * Visual Studio Code Go docuementation - https://github.com/golang/vscode-go/tree/master/docs
 * Distroless or Scratch for Go Apps? - https://blog.baeke.info/2021/03/28/distroless-or-scratch-for-go-apps/
