@@ -28,7 +28,7 @@ Solves the **Two Fer** exercise on Exercism. See https://exercism.org/tracks/go/
 ### Useful resources
 
 * Makefile tutorial - https://makefiletutorial.com/
-* Visual Studio Code Go docuemntation - https://github.com/golang/vscode-go/tree/master/docs
+* Visual Studio Code Go docuementation - https://github.com/golang/vscode-go/tree/master/docs
 * Distroless or Scratch for Go Apps? - https://blog.baeke.info/2021/03/28/distroless-or-scratch-for-go-apps/
 
 ## Usage
