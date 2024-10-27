@@ -1,13 +1,33 @@
-# Go Exercises Repository
+# Go Playground
 
-This repository contains solutions and exercises completed as part of my Go programming learning journey. Inspired by books such as *Learning Go* by O'Reilly and *Get Programming with Go* from Manning, along with the interactive exercises from Exercism's Go track, this collection of code serves as a reference and reflection of my progress.
+This repository contains a set of Go exercises and projects, each focusing on different programming concepts and challenges.
 
-## Contents
-- **Exercises** from various sources, including practice programs to reinforce fundamental Go concepts.
-- **Learning Resources** referenced include books and online platforms.
+## Projects
+
+### collatz-conjecture
+Solves the **Collatz Conjecture** (3n + 1) problem, a famous sequence problem in mathematics.
+
+- **Run**: `go run collatz_conjecture/collatz_conjecture.go`
+
+### fizzbuz
+A classic **FizzBuzz** implementation, where numbers divisible by 3 or 5 are replaced with "Fizz" or "Buzz".
+
+- **Run**: `go run fizzbuz/fizzbuzz.go`
+
+### guess-game
+A simple **number guessing game** where you attempt to guess the computer’s chosen number.
+
+- **Run**: `make -C guess-game` to build and `./guess-game/guess` to play.
+
+### hello-world
+The basic **Hello World** program to get started with Go.
+
+- **Run**: `go run hello-world/hello_world.go`
 
 ## Usage
-Clone this repository to explore the Go exercises:
+
+To explore or run any of the projects, clone this repository:
+
 ```bash
 git clone https://github.com/yourusername/go-playground.git
 cd go-playground
