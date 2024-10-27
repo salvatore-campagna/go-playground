@@ -1,5 +1,12 @@
 .DEFAULT_GOAL := build
-.PHONY: fmt vet build
+BINARY_NAME = guess
+.PHONY: fmt vet build run clean
+
+build: vet
+	go build -o $(BINARY_NAME) ./
+
+run: build
+	./$(BINARY_NAME)
 
 fmt:
 	go fmt ./...
@@ -7,8 +14,5 @@ fmt:
 vet: fmt
 	go vet ./...
 
-build: vet
-	go build
-
 clean:
-	go clean
+	rm -f $(BINARY_NAME)
