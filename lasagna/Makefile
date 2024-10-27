@@ -1,12 +1,8 @@
-.DEFAULT_GOAL := build
-BINARY_NAME = lasagna
-.PHONY: fmt vet build run clean
+.DEFAULT_GOAL := test
+.PHONY: fmt vet test clean
 
-build: vet
-	go build -o $(BINARY_NAME) ./
-
-run: build
-	./$(BINARY_NAME)
+test: vet
+	go test
 
 fmt:
 	go fmt ./...
@@ -15,4 +11,4 @@ vet: fmt
 	go vet ./...
 
 clean:
-	rm -f $(BINARY_NAME)
+	go clean
