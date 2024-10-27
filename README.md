@@ -5,7 +5,7 @@ This repository contains a set of Go exercises and projects, each focusing on di
 ## Projects
 
 ### collatz-conjecture
-Solves the **Collatz Conjecture** (3n + 1) problem, a famous sequence problem in mathematics.
+Solves the **Collatz Conjecture** (3n + 1) problem, a famous sequence problem in mathematics. See https://exercism.org/tracks/go/exercises/collatz-conjecture.
 
 ### fizzbuz
 A classic **FizzBuzz** implementation, where numbers divisible by 3 or 5 are replaced with "Fizz" or "Buzz".
@@ -17,13 +17,13 @@ A simple **number guessing game** where you attempt to guess the computer’s ch
 The basic **Hello World** program to get started with Go.
 
 ### lasagna
-Solves the **Gopher's Gorgeous Lasagna** exercise on Exercism. See https://exercism.org/tracks/go/exercises/lasagna
+Solves the **Gopher's Gorgeous Lasagna** exercise on Exercism. See https://exercism.org/tracks/go/exercises/lasagna.
 
 ### raindrops
-Solves the **Raindrops** exercise on Exercism. See https://exercism.org/tracks/go/exercises/raindrops
+Solves the **Raindrops** exercise on Exercism. See https://exercism.org/tracks/go/exercises/raindrops.
 
 ### two-fer
-Solves the **Two Fer** exercise on Exercism. See https://exercism.org/tracks/go/exercises/two-fer
+Solves the **Two Fer** exercise on Exercism. See https://exercism.org/tracks/go/exercises/two-fer.
 
 ## Usage
 
