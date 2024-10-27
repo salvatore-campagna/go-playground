@@ -1,7 +1,5 @@
 .DEFAULT_GOAL := build
-
 BINARY_NAME = collatz-conjecture
-
 .PHONY: fmt vet build run clean
 
 build: vet
