@@ -1,6 +1,9 @@
 .DEFAULT_GOAL := run
 .PHONY: fmt vet test clean
 
+test: build
+	go test ./...
+
 run: build
 	go run main/main.go
 
