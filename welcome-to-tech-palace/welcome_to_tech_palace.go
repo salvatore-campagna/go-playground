@@ -1,3 +1,6 @@
+// Package techpalace provides utilities for generating welcome messages,
+// adding decorative borders, and cleaning up old marketing messages
+// specifically for the Tech Palace's customer engagement.
 package techpalace
 
 import (
