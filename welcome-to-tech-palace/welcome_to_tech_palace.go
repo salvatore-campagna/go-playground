@@ -12,13 +12,15 @@ func WelcomeMessage(customer string) string {
 
 // AddBorder adds a border to a welcome message.
 func AddBorder(welcomeMsg string, numStarsPerLine int) string {
-	var sb strings.Builder
 	stars := strings.Repeat("*", numStarsPerLine)
+
+	var sb strings.Builder
 	sb.WriteString(stars)
 	sb.WriteString("\n")
 	sb.WriteString(welcomeMsg)
 	sb.WriteString("\n")
 	sb.WriteString(stars)
+
 	return sb.String()
 }
 
