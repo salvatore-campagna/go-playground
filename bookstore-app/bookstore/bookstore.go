@@ -48,7 +48,7 @@ func (b *Book) SellBook() error {
 	return nil
 }
 
-// New creates a new BookStore with the given name and initializes an empty book inventory.
+// NewBookStore creates a new BookStore with the given name and initializes an empty book inventory.
 func NewBookStore(name string) BookStore {
 	return BookStore{
 		Name:  name,
