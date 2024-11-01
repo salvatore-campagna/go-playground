@@ -1,71 +1,47 @@
 package bookstore
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewBook(t *testing.T) {
 	book := NewBook("Go in Action", "William Kennedy", 39.99, 10)
-	if book.Title != "Go in Action" {
-		t.Errorf("expected title to be 'Go in Action', got %s", book.Title)
-	}
-	if book.Author != "William Kennedy" {
-		t.Errorf("expected author to be 'William Kennedy', got %s", book.Author)
-	}
-	if book.Price != 39.99 {
-		t.Errorf("expected price to be 39.99, got %f", book.Price)
-	}
-	if book.InStock != 10 {
-		t.Errorf("expected inStock to be 10, got %d", book.InStock)
-	}
+	assert.Equal(t, "Go in Action", book.Title, "Title should match")
+	assert.Equal(t, "William Kennedy", book.Author, "Author should match")
+	assert.Equal(t, 39.99, book.Price, "Price should match")
+	assert.Equal(t, 10, book.InStock, "InStock should match")
 }
 
 func TestHasStock(t *testing.T) {
 	book := NewBook("Go in Action", "William Kennedy", 39.99, 1)
-	if !book.HasStock() {
-		t.Errorf("expected HasStock to return true, got false")
-	}
+	assert.True(t, book.HasStock(), "HasStock should return true when InStock > 0")
 	book.InStock = 0
-	if book.HasStock() {
-		t.Errorf("expected HasStock to return false, got true")
-	}
+	assert.False(t, book.HasStock(), "HasStock should return false when InStock == 0")
 }
 
 func TestSellBook(t *testing.T) {
 	book := NewBook("Go in Action", "William Kennedy", 39.99, 1)
-	if err := book.SellBook(); err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-	if book.InStock != 0 {
-		t.Errorf("expected inStock to be 0, got %d", book.InStock)
-	}
 	err := book.SellBook()
-	if err == nil {
-		t.Errorf("expected an error when selling out-of-stock book, got nil")
-	}
+	assert.NoError(t, err, "Selling a book in stock should not return an error")
+	assert.Equal(t, 0, book.InStock, "Remaining stock should be 0 after sale")
+	err = book.SellBook()
+	assert.Error(t, err, "Selling out-of-stock book should return an error")
 }
 
 func TestNewBookStore(t *testing.T) {
 	store := NewBookStore("The Go Bookstore")
-	if store.Name != "The Go Bookstore" {
-		t.Errorf("expected name to be 'The Go Bookstore', got %s", store.Name)
-	}
-	if len(store.Books) != 0 {
-		t.Errorf("expected no books in the new store, got %d", len(store.Books))
-	}
+	assert.Equal(t, "The Go Bookstore", store.Name, "Store name should match")
+	assert.Empty(t, store.Books, "New store should have an empty book slice")
 }
 
 func TestAddBook(t *testing.T) {
 	store := NewBookStore("The Go Bookstore")
 	book := NewBook("Go in Action", "William Kennedy", 39.99, 10)
 	store.AddBook(book)
-	if len(store.Books) != 1 {
-		t.Errorf("expected 1 book in the store, got %d", len(store.Books))
-	}
-	if store.Books[0].Title != "Go in Action" {
-		t.Errorf("expected book title to be 'Go in Action', got %s", store.Books[0].Title)
-	}
+	assert.Len(t, store.Books, 1, "Store should contain 1 book after addition")
+	assert.Equal(t, "Go in Action", store.Books[0].Title, "Added book title should match")
 }
 
 func TestTotalInventoryValue(t *testing.T) {
@@ -73,9 +49,7 @@ func TestTotalInventoryValue(t *testing.T) {
 	store.AddBook(NewBook("Go in Action", "William Kennedy", 39.99, 10))
 	store.AddBook(NewBook("Learning Go", "Jon Bodner", 29.99, 5))
 	expectedValue := (39.99 * 10) + (29.99 * 5)
-	if store.TotalInventoryValue() != expectedValue {
-		t.Errorf("expected total inventory value to be %f, got %f", expectedValue, store.TotalInventoryValue())
-	}
+	assert.Equal(t, expectedValue, store.TotalInventoryValue(), "Total inventory value should match expected")
 }
 
 func TestFindBookByTitle(t *testing.T) {
@@ -84,17 +58,11 @@ func TestFindBookByTitle(t *testing.T) {
 	store.AddBook(book)
 
 	foundBook, err := store.FindBookByTitle("Go in Action")
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-	if foundBook.Title != "Go in Action" {
-		t.Errorf("expected book title to be 'Go in Action', got %s", foundBook.Title)
-	}
+	assert.NoError(t, err, "Finding an existing book should not return an error")
+	assert.Equal(t, "Go in Action", foundBook.Title, "Found book title should match")
 
 	_, err = store.FindBookByTitle("Unknown Book")
-	if err == nil {
-		t.Errorf("expected an error when book is not found, got nil")
-	}
+	assert.Error(t, err, "Finding a non-existing book should return an error")
 }
 
 func TestFindBooksByTitle(t *testing.T) {
@@ -104,12 +72,8 @@ func TestFindBooksByTitle(t *testing.T) {
 	store.AddBook(NewBook("Python Basics", "Someone Else", 25.99, 7))
 
 	results := store.FindBooksByTitle("Go")
-	if len(results) != 2 {
-		t.Errorf("expected 2 books to match the title pattern, got %d", len(results))
-	}
+	assert.Len(t, results, 2, "Expected 2 books to match the title pattern 'Go'")
 	for _, book := range results {
-		if !strings.Contains(book.Title, "Go") {
-			t.Errorf("expected book title to contain 'Go', got %s", book.Title)
-		}
+		assert.Contains(t, book.Title, "Go", "Book title should contain 'Go'")
 	}
 }
