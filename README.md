@@ -7,6 +7,11 @@ This repository contains a set of Go exercises and projects, each focusing on di
 ### annalys-infiltration
 Solves the **Annalyn's Infiltration** exercise on Exercism. See https://exercism.org/tracks/go/exercises/annalyns-infiltration.
 
+### bookstore
+Implements a Bookstore Inventory Manager, a project designed to manage a bookstore's inventory. This project demonstrates working with
+Go structs, methods, and slices. It includes features for creating books, adding them to a bookstore, checking stock levels, selling books,
+calculating the total inventory value, and searching for books by title or a title pattern.
+
 ### cars-assemble
 Solves the **Cars Assemble** exercise on Exercism. See https://exercism.org/tracks/go/exercises/cars-assemble.
 
