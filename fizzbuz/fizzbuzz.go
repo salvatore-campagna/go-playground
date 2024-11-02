@@ -19,14 +19,14 @@ func FizzBuzz(n int) string {
 	var sb strings.Builder
 
 	for i := 1; i <= n; i++ {
-		length := sb.Len()
-		if i%3 == 0 {
+		switch {
+		case i%3 == 0 && i%5 == 0:
+			sb.WriteString("FizzBuzz")
+		case i%3 == 0:
 			sb.WriteString("Fizz")
-		}
-		if i%5 == 0 {
+		case i%5 == 0:
 			sb.WriteString("Buzz")
-		}
-		if sb.Len() == length {
+		default:
 			sb.WriteString(strconv.Itoa(i))
 		}
 		sb.WriteString("\n")
