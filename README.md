@@ -36,6 +36,9 @@ Solves the **Raindrops** exercise on Exercism. See https://exercism.org/tracks/g
 ### two-fer
 Solves the **Two Fer** exercise on Exercism. See https://exercism.org/tracks/go/exercises/two-fer.
 
+### vehicle-purchase
+Solves the **Vehicle Purchase** exercise on exercism. See https://exercism.org/tracks/go/exercises/vehicle-purchase.
+
 ### welcome-to-tech-palace
 Solves the **Welcome to Tech Palace** exercise on Exercism. See https://exercism.org/tracks/go/exercises/welcome-to-tech-palace.
 
