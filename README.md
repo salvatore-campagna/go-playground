@@ -52,7 +52,7 @@ Solves the **Welcome to Tech Palace** exercise on Exercism. See https://exercism
 * How to Write Go Code - https://go.dev/doc/code
 * Exercism Go Track - https://exercism.org/tracks/go
 * Makefile tutorial - https://makefiletutorial.com/
-* Visual Studio Code Go docuementation - https://github.com/golang/vscode-go/tree/master/docs
+* Visual Studio Code Go documentation - https://github.com/golang/vscode-go/tree/master/docs
 * Distroless or Scratch for Go Apps? - https://blog.baeke.info/2021/03/28/distroless-or-scratch-for-go-apps/
 
 ## Usage
