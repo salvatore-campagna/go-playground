@@ -57,5 +57,5 @@ Solves the **Welcome to Tech Palace** exercise on Exercism. See https://exercism
 To explore or run any of the projects, clone this repository:
 
 ```bash
-git clone https://github.com/yourusername/go-playground.git
+git clone https://github.com/salvatore-campagna/go-playground.git
 cd go-playground
