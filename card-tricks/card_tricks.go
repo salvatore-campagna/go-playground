@@ -35,8 +35,7 @@ func SetItem(slice []int, index, value int) []int {
 func PrependItems(slice []int, values ...int) []int {
 	copy := make([]int, 0, len(values)+len(slice))
 	copy = append(copy, values...)
-	copy = append(copy, slice...)
-	return copy
+	return append(copy, slice...)
 }
 
 // RemoveItem removes an item from a slice by modifying the existing slice.
@@ -47,6 +46,5 @@ func RemoveItem(slice []int, index int) []int {
 
 	b := make([]int, 0, len(slice)-1)
 	b = append(b, slice[:index]...)
-	b = append(b, slice[index+1:]...)
-	return b
+	return append(b, slice[index+1:]...)
 }
