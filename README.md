@@ -12,6 +12,9 @@ Implements a Bookstore Inventory Manager, a project designed to manage a booksto
 Go structs, methods, and slices. It includes features for creating books, adding them to a bookstore, checking stock levels, selling books,
 calculating the total inventory value, and searching for books by title or a title pattern.
 
+### card-tricks
+Solves the **Card Tricks** exercixe on Exercism. See https://exercism.org/tracks/go/exercises/card-tricks.
+
 ### cars-assemble
 Solves the **Cars Assemble** exercise on Exercism. See https://exercism.org/tracks/go/exercises/cars-assemble.
 
