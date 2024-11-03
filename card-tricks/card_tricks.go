@@ -2,13 +2,6 @@
 Package cards provides functions for manipulating slices of integers,
 representing a collection of cards. It includes functions to retrieve, modify,
 prepend, and remove items, as well as to retrieve specific favorite cards.
-
-Types:
-  - FavoriteCards: Returns a predefined slice of favorite cards in a specified order.
-  - GetItem: Retrieves an item from a slice at a given position, returning -1 if out of range.
-  - SetItem: Sets or appends an item in a slice at a specified position.
-  - PrependItems: Prepends a variable number of items to the beginning of a slice.
-  - RemoveItem: Removes an item from a slice at a specified position, returning the original slice if out of range.
 */
 package cards
 
