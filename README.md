@@ -30,6 +30,9 @@ The basic **Hello World** program to get started with Go.
 ### lasagna
 Solves the **Gopher's Gorgeous Lasagna** exercise on Exercism. See https://exercism.org/tracks/go/exercises/lasagna.
 
+### need-for-speed
+Solves the **Need For Speed** exercise on Exercism. See https://exercism.org/tracks/go/exercises/need-for-speed.
+
 ### party-robot
 Solves the **Party Robot** exercise on Exercism. See https://exercism.org/tracks/go/exercises/party-robot.
 
