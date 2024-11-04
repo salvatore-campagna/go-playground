@@ -60,6 +60,8 @@ Solves the **Welcome to Tech Palace** exercise on Exercism. See https://exercism
 * Makefile tutorial - https://makefiletutorial.com/
 * Visual Studio Code Go documentation - https://github.com/golang/vscode-go/tree/master/docs
 * Distroless or Scratch for Go Apps? - https://blog.baeke.info/2021/03/28/distroless-or-scratch-for-go-apps/
+* A Guide to the Go Garbage Collector - https://tip.golang.org/doc/gc-guide
+* Summary to the difference between T and T* method sets in Go - https://gronskiy.com/posts/2020-04-golang-pointer-vs-value-methods/
 
 ## Usage
 
