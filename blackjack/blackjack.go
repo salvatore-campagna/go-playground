@@ -7,8 +7,6 @@ package blackjack
 // face cards ("jack", "queen", "king") are worth 10, and the "joker" has a value of 0.
 func ParseCard(card string) int {
 	switch card {
-	case "joker":
-		return 0
 	case "ace":
 		return 11
 	case "two":
@@ -27,8 +25,10 @@ func ParseCard(card string) int {
 		return 8
 	case "nine":
 		return 9
-	default:
+	case "ten", "jack", "queen", "king":
 		return 10
+	default:
+		return 0
 	}
 }
 
