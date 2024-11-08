@@ -57,8 +57,6 @@ func FirstTurn(card1, card2, dealerCard string) string {
 		return win
 	case handValue >= 12 && handValue <= 16 && dealerValue >= 7 || handValue <= 11:
 		return hit
-	case handValue >= 12 && handValue <= 16 && dealerValue < 7:
-		return stand
 	default:
 		return stand
 	}
