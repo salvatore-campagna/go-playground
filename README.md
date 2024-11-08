@@ -48,6 +48,9 @@ Solves the **Party Robot** exercise on Exercism. See https://exercism.org/tracks
 ### raindrops
 Solves the **Raindrops** exercise on Exercism. See https://exercism.org/tracks/go/exercises/raindrops.
 
+### scrabble-score
+Solves the **Scrabble Score** exercise on Exercism. See https://exercism.org/tracks/go/exercises/scrabble-score.
+
 ### two-fer
 Solves the **Two Fer** exercise on Exercism. See https://exercism.org/tracks/go/exercises/two-fer.
 
