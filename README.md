@@ -4,6 +4,9 @@ This repository contains a set of Go exercises and projects, each focusing on di
 
 ## Projects
 
+### animal-magic
+Solves the **Animal Magic** exercise on Exercism. See https://exercism.org/tracks/go/exercises/animal-magic.
+
 ### annalys-infiltration
 Solves the **Annalyn's Infiltration** exercise on Exercism. See https://exercism.org/tracks/go/exercises/annalyns-infiltration.
 
