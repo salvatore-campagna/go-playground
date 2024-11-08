@@ -10,6 +10,9 @@ Solves the **Animal Magic** exercise on Exercism. See https://exercism.org/track
 ### annalys-infiltration
 Solves the **Annalyn's Infiltration** exercise on Exercism. See https://exercism.org/tracks/go/exercises/annalyns-infiltration.
 
+### blackjack
+Solves the **Blackjack** exercise on Exercism. See https://exercism.org/tracks/go/exercises/blackjack.
+
 ### bookstore
 Implements a Bookstore Inventory Manager, a project designed to manage a bookstore's inventory. This project demonstrates working with
 Go structs, methods, and slices. It includes features for creating books, adding them to a bookstore, checking stock levels, selling books,
