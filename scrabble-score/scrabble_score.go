@@ -10,12 +10,12 @@ import "strings"
 func Score(word string) int {
 	totalScore := 0
 	for _, r := range strings.ToUpper(word) {
-		totalScore += letterValue(r)
+		totalScore += scrabbleScore(r)
 	}
 	return totalScore
 }
 
-// letterValue returns the Scrabble score for a given letter.
+// scrabbleScore returns the Scrabble score for a given letter.
 // The scoring is based on the standard Scrabble rules:
 // - 1 point: A, E, I, O, U, L, N, S, T, R
 // - 2 points: D, G
@@ -24,7 +24,7 @@ func Score(word string) int {
 // - 5 points: K
 // - 8 points: J, X
 // - 10 points: Q, Z
-func letterValue(r rune) int {
+func scrabbleScore(r rune) int {
 	switch r {
 	case 'D', 'G':
 		return 2
