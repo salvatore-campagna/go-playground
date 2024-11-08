@@ -71,6 +71,8 @@ Solves the **Welcome to Tech Palace** exercise on Exercism. See https://exercism
 * Distroless or Scratch for Go Apps? - https://blog.baeke.info/2021/03/28/distroless-or-scratch-for-go-apps/
 * A Guide to the Go Garbage Collector - https://tip.golang.org/doc/gc-guide
 * Summary to the difference between T and T* method sets in Go - https://gronskiy.com/posts/2020-04-golang-pointer-vs-value-methods/
+* The Go Programming Language Specification - https://go.dev/ref/spec#Method_sets
+
 
 ## Usage
 
