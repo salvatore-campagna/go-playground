@@ -17,6 +17,10 @@ const daysPerWeek = 7
 // BirdsInWeek returns the total bird count for a given week by summing the counts of that specific week.
 // The parameter `week` is 1-indexed (i.e., week 1 refers to days 1-7, week 2 refers to days 8-14, etc.).
 func BirdsInWeek(birdsPerDay []int, week int) int {
+	if week <= 0 || len(birdsPerDay) < daysPerWeek*week {
+		// Normally we would return an error but the function expects retruning only an `int`
+		return 0
+	}
 	start := daysPerWeek * (week - 1)
 	end := start + daysPerWeek
 	return TotalBirdCount(birdsPerDay[start:end])
