@@ -10,15 +10,15 @@ import (
 )
 
 func main() {
+	var trials, lower, upper = 1, 1, 100
 	if len(os.Args) < 2 {
-		fmt.Println("Missing number. Please provide a valid integer")
+		fmt.Printf("Missing number. Please provide a valid integer in rnage [ %v, %v ]\n", lower, upper)
 		return
 	}
 
-	var trials, lower, upper = 1, 1, 100
 	target, err := strconv.Atoi(os.Args[1])
 	if err != nil {
-		fmt.Println("Invalid number. Please provide a valid integer")
+		fmt.Printf("Invalid number. Please provide a valid integer in range [ %v, %v ]\n", lower, upper)
 		return
 	}
 
