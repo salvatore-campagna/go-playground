@@ -48,6 +48,9 @@ Solves the **Isogram** exercise on Exercism. See https://exercism.org/tracks/go/
 ### lasagna
 Solves the **Gopher's Gorgeous Lasagna** exercise on Exercism. See https://exercism.org/tracks/go/exercises/lasagna.
 
+### luhn
+Solves the **Luhn** exercise on Exercism. See https://exercism.org/tracks/go/exercises/luhn.
+
 ### need-for-speed
 Solves the **Need For Speed** exercise on Exercism. See https://exercism.org/tracks/go/exercises/need-for-speed.
 
