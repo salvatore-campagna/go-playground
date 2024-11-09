@@ -10,16 +10,16 @@ import (
 // Valid checks if the provided string is valid according to the Luhn algorithm.
 // It ignores spaces and requires that the input consists of only digits (after removing spaces).
 // The function returns true if the string is a valid Luhn sequence, otherwise false.
-func Valid(id string) bool {
-	_id := removeAllSpaces(id)
-	if len(_id) <= 1 {
+func Valid(s string) bool {
+	id := removeAllSpaces(s)
+	if len(id) <= 1 {
 		return false
 	}
 
 	luhnValue := 0
-	shouldDouble := len(_id)%2 == 0
+	shouldDouble := len(id)%2 == 0
 
-	for _, r := range _id {
+	for _, r := range id {
 		if !unicode.IsDigit(r) {
 			return false
 		}
