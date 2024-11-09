@@ -1,3 +1,5 @@
+// This program is a simple number guessing game where the computer tries to guess a
+// target number provided as a command-line argument. The target number must be between 1 and 100.
 package main
 
 import (
