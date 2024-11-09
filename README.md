@@ -10,6 +10,9 @@ Solves the **Animal Magic** exercise on Exercism. See https://exercism.org/track
 ### annalys-infiltration
 Solves the **Annalyn's Infiltration** exercise on Exercism. See https://exercism.org/tracks/go/exercises/annalyns-infiltration.
 
+### bird-watcher
+Solves the **Bird Watcher** exercise on Exercism. See https://exercism.org/tracks/go/exercises/bird-watcher.
+
 ### blackjack
 Solves the **Blackjack** exercise on Exercism. See https://exercism.org/tracks/go/exercises/blackjack.
 
