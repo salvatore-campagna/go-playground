@@ -39,6 +39,9 @@ A simple **number guessing game** where you attempt to guess the computer’s ch
 ### hello-world
 The basic **Hello World** program to get started with Go.
 
+### isogram
+Solves the **Isogram** exercise on Exercism. See https://exercism.org/tracks/go/exercises/isogram.
+
 ### lasagna
 Solves the **Gopher's Gorgeous Lasagna** exercise on Exercism. See https://exercism.org/tracks/go/exercises/lasagna.
 
