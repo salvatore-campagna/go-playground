@@ -28,7 +28,7 @@ func BirdsInWeek(birdsPerDay []int, week int) int {
 
 // FixBirdCountLog returns the bird counts after correcting the logs for alternate days.
 // It increases the count by 1 for every other day, starting from day 0 (i.e., the first day).
-// The modification is done in place and returns the updated slice.
+// A copy of the original slice is returned instead of modifying the input slice in place.
 func FixBirdCountLog(birdsPerDay []int) []int {
 	fixedBirdsPerDay := make([]int, len(birdsPerDay))
 	copy(fixedBirdsPerDay, birdsPerDay)
