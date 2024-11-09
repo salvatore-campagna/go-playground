@@ -30,6 +30,9 @@ Solves the **Cars Assemble** exercise on Exercism. See https://exercism.org/trac
 ### collatz-conjecture
 Solves the **Collatz Conjecture** (3n + 1) problem, a famous sequence problem in mathematics. See https://exercism.org/tracks/go/exercises/collatz-conjecture.
 
+### difference-of-squares
+Solves the **Difference of Squares** exercise on Exercism. See https://exercism.org/tracks/go/exercises/difference-of-squares.
+
 ### fizzbuz
 A classic **FizzBuzz** implementation, where numbers divisible by 3 or 5 are replaced with "Fizz" or "Buzz".
 
