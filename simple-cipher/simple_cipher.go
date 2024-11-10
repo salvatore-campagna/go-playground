@@ -35,6 +35,7 @@ func NewCaesar() Cipher {
 
 // NewShift creates a Shift cipher with the specified distance.
 // Returns nil if the distance is not within the valid range (1-25 or -3).
+// Looks like according to NSA the Caesar cipher uses a shift of -3.
 func NewShift(distance int) Cipher {
 	if (distance <= 0 || distance >= 26) && distance != -3 {
 		return nil
