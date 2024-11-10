@@ -73,7 +73,9 @@ func encode(input string, shift int) string {
 }
 
 // NewVigenere creates a Vigenère cipher with the specified key.
-// Returns nil if the key is invalid (empty, non-lowercase, or all 'a's).
+// The key must consist of lowercase letters ('a' to 'z') only.
+// A key consisting entirely of the letter 'a' is disallowed.
+// Returns nil if the key is invalid.
 func NewVigenere(key string) Cipher {
 	if len(key) == 0 || len(strings.Trim(key, "a")) == 0 {
 		return nil
