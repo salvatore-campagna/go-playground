@@ -38,7 +38,10 @@ func (bs *BitSet) Clear(pos int) error {
 	if index < 0 || index >= len(bs.bits) {
 		return fmt.Errorf("invalid position: %d", pos)
 	}
-	bs.bits[index] &^= 1 << offset
+	// Create a mask with all bits set to 1, except for the bit at position `offset` which is set to 0.
+	// This mask will be used to clear the bit at the given position while leaving other bits unchanged.
+	mask := uint64(^(1 << offset))
+	bs.bits[index] &= mask
 	return nil
 }
 
