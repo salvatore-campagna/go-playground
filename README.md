@@ -21,7 +21,8 @@ Solves the **Blackjack** exercise on Exercism, involving control flow and strate
 See: https://exercism.org/tracks/go/exercises/blackjack.
 
 ### bloom-filter
-Implements a **Bloom Filter**, a probabilistic data structure used for efficient membership testing with a low probability of false positives. This implementation uses Go's type parameters (generics) to support multiple data types, such as `string`, `int`, and `int64`. It demonstrates working with hash functions and bit manipulation. The Bloom Filter is useful in scenarios where space efficiency is crucial, such as caching, spam filters, or database query optimizations.
+Implements a **Bloom Filter**, a probabilistic data structure used for efficient membership testing with a low probability of false positives.
+It demonstrates working with hash functions and bit manipulation. The Bloom Filter is useful in scenarios where space efficiency is crucial, such as caching, spam filters, or database query optimizations.
 
 ### bookstore
 Implements a **Bookstore Inventory Manager**, a project designed to manage a bookstore's inventory. It demonstrates working with Go structs, methods, and slices, and includes features for creating books, adding them to the bookstore, checking stock levels, selling books, and calculating inventory value.
