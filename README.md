@@ -68,6 +68,10 @@ See: https://exercism.org/tracks/go/exercises/luhn.
 Solves the **Need For Speed** exercise on Exercism, focusing on simulating a racing car with different speeds and fuel levels.
 See: https://exercism.org/tracks/go/exercises/need-for-speed.
 
+### pangram
+Solves the **Pangram** exercise on Exercism, which focuses on string manipulation and character checks. The solution involves checking whether a given string contains every letter of the English alphabet at least once, ignoring case and non-letter characters.
+See: https://exercism.org/tracks/go/exercises/pangram.
+
 ### party-robot
 Solves the **Party Robot** exercise on Exercism, practicing string formatting and control flow.
 See: https://exercism.org/tracks/go/exercises/party-robot.
