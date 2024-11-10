@@ -43,6 +43,10 @@ See: https://exercism.org/tracks/go/exercises/collatz-conjecture.
 Solves the **Difference of Squares** exercise on Exercism, focusing on basic arithmetic operations and loops.
 See: https://exercism.org/tracks/go/exercises/difference-of-squares.
 
+### etl
+Solves the **ETL (Extract-Transform-Load)** exercise on Exercism, which focuses on transforming data formats. The exercise involves converting a legacy scoring system where letters are associated with point values into a modern format where each letter (in lowercase) is mapped to its corresponding score.
+See: https://exercism.org/tracks/go/exercises/etl.
+
 ### fizzbuzz
 A classic **FizzBuzz** implementation, where numbers divisible by 3 or 5 are replaced with "Fizz" or "Buzz". Demonstrates control flow and modulus operations.
 
