@@ -38,13 +38,13 @@ import "strings"
 //	Transform(map[int][]string{1: {"A", "E"}, 2: {"D", "G"}})
 //	Output: map[string]int{"a": 1, "e": 1, "d": 2, "g": 2}
 func Transform(in map[int][]string) map[string]int {
-	oneToOneMapping := make(map[string]int)
+	letterToPoints := make(map[string]int)
 
 	for points, letters := range in {
 		for _, letter := range letters {
-			oneToOneMapping[strings.ToLower(letter)] = points
+			letterToPoints[strings.ToLower(letter)] = points
 		}
 	}
 
-	return oneToOneMapping
+	return letterToPoints
 }
