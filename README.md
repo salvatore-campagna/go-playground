@@ -16,6 +16,10 @@ See: https://exercism.org/tracks/go/exercises/annalyns-infiltration.
 Solves the **Bird Watcher** exercise on Exercism, focusing on slice manipulation and basic analytics.
 See: https://exercism.org/tracks/go/exercises/bird-watcher.
 
+### bitset
+Implements a BitSet data structure using a slice of uint64 integers, allowing efficient storage and manipulation of bits.
+Supports setting, clearing, and testing bits with error handling.
+
 ### blackjack
 Solves the **Blackjack** exercise on Exercism, involving control flow and strategy based on card game rules.
 See: https://exercism.org/tracks/go/exercises/blackjack.
