@@ -92,6 +92,10 @@ See: https://exercism.org/tracks/go/exercises/roman-numerals.
 Solves the **Scrabble Score** exercise on Exercism, calculating word scores based on letter values.
 See: https://exercism.org/tracks/go/exercises/scrabble-score.
 
+### simple-cipher
+Solves the **Simple Cipher** exercise on Exercism, implementing Caesar, Shift and Vigenère ciphers for encoding and decoding text.
+See: https://exercism.org/tracks/go/exercises/simple-cipher.
+
 ### two-fer
 Solves the **Two Fer** exercise on Exercism, focusing on functions and string interpolation.
 See: https://exercism.org/tracks/go/exercises/two-fer.
