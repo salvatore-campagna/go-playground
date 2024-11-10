@@ -42,7 +42,7 @@ func ToRomanNumeral(input int) (string, error) {
 	var builder strings.Builder
 
 	if input <= 0 || input >= 4000 {
-		return "", fmt.Errorf("invalid value [%d]", input)
+		return "", fmt.Errorf("input must be between 1 and 3999: %d", input)
 	}
 
 	for _, roman := range romans {
