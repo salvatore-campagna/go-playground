@@ -84,6 +84,10 @@ See: https://exercism.org/tracks/go/exercises/party-robot.
 Solves the **Raindrops** exercise on Exercism, implementing string manipulation based on divisibility rules.
 See: https://exercism.org/tracks/go/exercises/raindrops.
 
+### roman-numerals
+Solves the **Roman Numerals** exercise on Exercism, which focuses on converting integers into their Roman numeral representations. This solution uses a greedy approach to transform integers in the range of 1 to 3999 into their corresponding Roman numeral form.
+See: https://exercism.org/tracks/go/exercises/roman-numerals.
+
 ### scrabble-score
 Solves the **Scrabble Score** exercise on Exercism, calculating word scores based on letter values.
 See: https://exercism.org/tracks/go/exercises/scrabble-score.
