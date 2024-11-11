@@ -22,9 +22,9 @@ func WordCount(phrase string) Frequency {
 			updateWordFrequency(builder.String(), wordCounts)
 			builder.Reset()
 		} else if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'' {
-			// we need to keep '\'' here since we still don't know if they are
-			// in the moddle of a word or not. They will be removed later if they are
-			// triling or leading.
+			// we need to keep the '\'' chracters here since we still don't know if they are
+			// in the middle of a word or not. They will be removed later if they are
+			// leading or trailing.
 			builder.WriteRune(r)
 		}
 	}
