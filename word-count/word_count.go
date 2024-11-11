@@ -39,15 +39,9 @@ func WordCount(phrase string) Frequency {
 // updateWordFrequency updates the count of a cleaned word in the given map.
 // If the word is non-empty, it increments its count in the map.
 func updateWordFrequency(input string, frequency Frequency) {
-	word := cleanWord(input)
+	word := strings.Trim(input, "'")
 	if word == "" {
 		return
 	}
 	frequency[word]++
-}
-
-// cleanWord removes leading and trailing single quotes from a word while preserving
-// those within the word. It returns the cleaned word.
-func cleanWord(input string) string {
-	return strings.Trim(input, "'")
 }
