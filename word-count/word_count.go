@@ -15,11 +15,11 @@ type Frequency map[string]int
 // Returns a Frequency map with words and their respective counts.
 func WordCount(phrase string) Frequency {
 	builder := strings.Builder{}
-	wordCounts := make(Frequency)
+	frequency := make(Frequency)
 
 	for _, r := range strings.ToLower(phrase) {
 		if (unicode.IsSpace(r) || unicode.IsPunct(r)) && r != '\'' {
-			updateWordFrequency(builder.String(), wordCounts)
+			updateWordFrequency(builder.String(), frequency)
 			builder.Reset()
 		} else if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'' {
 			// we need to keep the '\'' chracters here since we still don't know if they are
@@ -30,20 +30,20 @@ func WordCount(phrase string) Frequency {
 	}
 
 	if builder.Len() > 0 {
-		updateWordFrequency(builder.String(), wordCounts)
+		updateWordFrequency(builder.String(), frequency)
 	}
 
-	return wordCounts
+	return frequency
 }
 
 // updateWordFrequency updates the count of a cleaned word in the given map.
 // If the word is non-empty, it increments its count in the map.
-func updateWordFrequency(input string, wordCounts map[string]int) {
+func updateWordFrequency(input string, frequency Frequency) {
 	word := cleanWord(input)
 	if word == "" {
 		return
 	}
-	wordCounts[word]++
+	frequency[word]++
 }
 
 // cleanWord removes leading and trailing single quotes from a word while preserving
