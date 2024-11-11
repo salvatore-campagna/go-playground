@@ -110,6 +110,11 @@ See: [Exercism - Vehicle Purchase](https://exercism.org/tracks/go/exercises/vehi
 A solution to the **Welcome to Tech Palace** exercise, practicing text formatting.  
 See: [Exercism - Welcome to Tech Palace](https://exercism.org/tracks/go/exercises/welcome-to-tech-palace).
 
+### word-count
+A solution to the **Word Count** exercise on Exercism. This exercise involves parsing a given phrase, normalizing it, and counting the frequency of each word.
+Handles spaces, punctuation, and special cases like internal single quotes within words.
+See: [Exercism - Word Count](https://exercism.org/tracks/go/exercises/word-count)
+
 ## Useful Resources
 
 - [Effective Go](https://go.dev/doc/effective_go)
