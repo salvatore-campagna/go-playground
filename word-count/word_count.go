@@ -1,5 +1,5 @@
 // Package wordcount provides functionality for counting the frequency of words
-// in a given phrase, while handling punctuation and special characters.
+// in a given phrase, handling punctuation and special characters.
 package wordcount
 
 import (
@@ -10,8 +10,10 @@ import (
 // Frequency represents a map where keys are words and values are their occurrence counts.
 type Frequency map[string]int
 
-// WordCount takes a phrase as input, converts it to lowercase, and counts the frequency
-// of each word. Words are separated by spaces or punctuation, except for internal single quotes.
+// WordCount takes a phrase as input, normalizes it to lowercase, and counts the frequency
+// of each word. Words are separated by spaces or punctuation, with special handling for
+// internal single quotes. Single quotes within words are preserved, while leading or
+// trailing single quotes are removed during processing.
 // Returns a Frequency map with words and their respective counts.
 func WordCount(phrase string) Frequency {
 	builder := strings.Builder{}
@@ -22,9 +24,8 @@ func WordCount(phrase string) Frequency {
 			updateWordFrequency(builder.String(), frequency)
 			builder.Reset()
 		} else if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'' {
-			// we need to keep the '\'' chracters here since we still don't know if they are
-			// in the middle of a word or not. They will be removed later if they are
-			// leading or trailing.
+			// Preserve internal single quotes since they may be part of a word.
+			// Leading or trailing quotes will be removed later.
 			builder.WriteRune(r)
 		}
 	}
@@ -36,8 +37,9 @@ func WordCount(phrase string) Frequency {
 	return frequency
 }
 
-// updateWordFrequency updates the count of a cleaned word in the given map.
-// If the word is non-empty, it increments its count in the map.
+// updateWordFrequency updates the count of a word in the given frequency map.
+// It trims leading and trailing single quotes from the word before counting.
+// If the resulting word is empty, it is ignored.
 func updateWordFrequency(input string, frequency Frequency) {
 	word := strings.Trim(input, "'")
 	if word == "" {
