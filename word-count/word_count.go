@@ -12,8 +12,8 @@ type Frequency map[string]int
 
 // WordCount takes a phrase as input, normalizes it to lowercase, and counts the frequency
 // of each word. Words are separated by spaces or punctuation, with special handling for
-// internal single quotes. Single quotes within words are preserved, while leading or
-// trailing single quotes are removed during processing.
+// internal single quotes. For example, words like "can't" or "don't" will retain the
+// internal single quote, while leading or trailing single quotes will be removed.
 // Returns a Frequency map with words and their respective counts.
 func WordCount(phrase string) Frequency {
 	builder := strings.Builder{}
@@ -24,7 +24,7 @@ func WordCount(phrase string) Frequency {
 			updateWordFrequency(builder.String(), frequency)
 			builder.Reset()
 		} else if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'' {
-			// Preserve internal single quotes since they may be part of a word.
+			// Preserve internal single quotes since they may be part of a word, like in "can't" or "don't".
 			// Leading or trailing quotes will be removed later.
 			builder.WriteRune(r)
 		}
@@ -39,7 +39,7 @@ func WordCount(phrase string) Frequency {
 
 // updateWordFrequency updates the count of a word in the given frequency map.
 // It trims leading and trailing single quotes from the word before counting.
-// If the resulting word is empty, it is ignored.
+// If the resulting word is empty after trimming, it is ignored.
 func updateWordFrequency(input string, frequency Frequency) {
 	word := strings.Trim(input, "'")
 	if word == "" {
