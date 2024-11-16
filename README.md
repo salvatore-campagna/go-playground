@@ -80,6 +80,11 @@ A simple **Hello World** program to get started with Go. Demonstrates Go's synta
 A solution to the **Interest Is Interesting** exercise on Exercism, which involves calculating interest rates, updating balances annually, and determining the number of years required to reach a target balance. The solution implements various financial calculations based on predefined interest rates for different balance ranges.  
 See: [Exercism - Interest Is Interesting](https://exercism.org/tracks/go/exercises/interest-is-interesting).
 
+### isbn-verifier
+A solution to the **ISBN Verifier** exercise on Exercism, which involves validating ISBN-10 codes based on specific rules.
+This exercise demonstrates working with string manipulation, rune validation, and implementing checksum calculations in Go.
+See: [Exercism - ISBN Verifier](https://exercism.org/tracks/go/exercises/isbn-verifier).
+
 ### isogram
 A solution to the **Isogram** exercise, identifying whether a word contains repeating letters.  
 See: [Exercism - Isogram](https://exercism.org/tracks/go/exercises/isogram).
@@ -140,7 +145,6 @@ See: [Exercism - Simple Cipher](https://exercism.org/tracks/go/exercises/simple-
 A solution to the **Strain** exercise on Exercism, which involves filtering slices based on a predicate function.
 This exercise demonstrates the use of Go's generics to implement flexible and reusable filtering functions.
 See: [Exercism - Strain](https://exercism.org/tracks/go/exercises/strain).
-
 
 ### two-fer
 A solution to the **Two Fer** exercise, focusing on functions and string interpolation.  
