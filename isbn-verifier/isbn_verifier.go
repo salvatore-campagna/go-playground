@@ -14,16 +14,16 @@ func IsValidISBN(isbn string) bool {
 	digitIndex := 0
 	isbnLen := len(isbn)
 
-	for i, r := range isbn {
-		if r == '-' {
+	for i, isbnDigit := range isbn {
+		if isbnDigit == '-' {
 			continue
 		}
 
-		if !isValidIsbnDigit(r, i, isbnLen) {
+		if !isValidIsbnDigit(isbnDigit, i, isbnLen) {
 			return false
 		}
 
-		value += digitValue(r) * (10 - digitIndex)
+		value += digitValue(isbnDigit) * (10 - digitIndex)
 		digitIndex++
 	}
 
