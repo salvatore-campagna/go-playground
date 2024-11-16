@@ -90,7 +90,11 @@ See: [Exercism - Lasagna](https://exercism.org/tracks/go/exercises/lasagna).
 
 ### lasagna-master
 A solution to the **Lasagna Master** exercise on Exercism, which involves managing the preparation and cooking time of a lasagna recipe. The solution includes calculating preparation time, determining the required quantities of ingredients like noodles and sauce, adding secret ingredients, and scaling recipes based on the number of portions. This exercise helps practice using constants, slices, and basic calculations in Go.
-See: [Exercism - Lasagna Master](https://exercism.org/tracks/go/exercises/lasagna-master). 
+See: [Exercism - Lasagna Master](https://exercism.org/tracks/go/exercises/lasagna-master).
+
+### logs-logs-logs
+A solution to the **Logs, Logs, Logs** exercise on Exercism. This exercise involves identifying applications based on specific Unicode characters in log entries, replacing characters in logs, and validating log lengths.
+See: [Exercism - Logs, Logs, Logs](https://exercism.org/tracks/go/exercises/logs-logs-logs).
 
 ### luhn
 A solution to the **Luhn** exercise, implementing the Luhn algorithm for validating credit card numbers.  
