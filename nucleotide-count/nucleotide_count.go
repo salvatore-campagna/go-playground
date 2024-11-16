@@ -22,12 +22,12 @@ func (dna DNA) Counts() (Histogram, error) {
 		'T': 0,
 	}
 
-	for _, r := range dna {
-		switch r {
+	for _, nucleotide := range dna {
+		switch nucleotide {
 		case 'A', 'C', 'G', 'T':
-			h[r]++
+			h[nucleotide]++
 		default:
-			return nil, fmt.Errorf("invalid DNA base %q", r)
+			return nil, fmt.Errorf("invalid DNA nucleotide %q", nucleotide)
 		}
 	}
 	return h, nil
