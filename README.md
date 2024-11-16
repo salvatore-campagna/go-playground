@@ -83,6 +83,10 @@ See: [Exercism - Isogram](https://exercism.org/tracks/go/exercises/isogram).
 A solution to the **Gopher's Gorgeous Lasagna** exercise, practicing functions and return values.  
 See: [Exercism - Lasagna](https://exercism.org/tracks/go/exercises/lasagna).
 
+### lasagna-master
+A solution to the **Lasagna Master** exercise on Exercism, which involves managing the preparation and cooking time of a lasagna recipe. The solution includes calculating preparation time, determining the required quantities of ingredients like noodles and sauce, adding secret ingredients, and scaling recipes based on the number of portions. This exercise helps practice using constants, slices, and basic calculations in Go.
+See: [Exercism - Lasagna Master](https://exercism.org/tracks/go/exercises/lasagna-master). 
+
 ### luhn
 A solution to the **Luhn** exercise, implementing the Luhn algorithm for validating credit card numbers.  
 See: [Exercism - Luhn](https://exercism.org/tracks/go/exercises/luhn).
