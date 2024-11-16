@@ -62,6 +62,10 @@ Created a **number guessing game** where players guess a randomly chosen number.
 ### hello-world
 A simple **Hello World** program to get started with Go. Demonstrates Go's syntax and structure.
 
+### interest-is-interesting
+A solution to the **Interest Is Interesting** exercise on Exercism, which involves calculating interest rates, updating balances annually, and determining the number of years required to reach a target balance. The solution implements various financial calculations based on predefined interest rates for different balance ranges.  
+See: [Exercism - Interest Is Interesting](https://exercism.org/tracks/go/exercises/interest-is-interesting).
+
 ### isogram
 A solution to the **Isogram** exercise, identifying whether a word contains repeating letters.  
 See: [Exercism - Isogram](https://exercism.org/tracks/go/exercises/isogram).
