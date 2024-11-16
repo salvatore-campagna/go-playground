@@ -78,6 +78,10 @@ See: [Exercism - Luhn](https://exercism.org/tracks/go/exercises/luhn).
 A solution to the **Need For Speed** exercise, simulating a racing car with different speeds and fuel levels.  
 See: [Exercism - Need For Speed](https://exercism.org/tracks/go/exercises/need-for-speed).
 
+### nucleotide-count
+A solution to the **Nucleotide Count** exercise on Exercism, which involves counting occurrences of each nucleotide ('A', 'C', 'G', 'T') in a given DNA sequence. The solution also validates the input to ensure it contains only valid nucleotide characters.  
+See: [Exercism - Nucleotide Count](https://exercism.org/tracks/go/exercises/nucleotide-count).
+
 ### pangram
 A solution to the **Pangram** exercise, checking if a string contains every letter of the English alphabet at least once.  
 See: [Exercism - Pangram](https://exercism.org/tracks/go/exercises/pangram).
