@@ -10,7 +10,7 @@ import "unicode"
 // - The character 'X' is only allowed as the last character and represents the value 10.
 // - The checksum is calculated as: (10*d1 + 9*d2 + ... + 1*d10) % 11 == 0.
 func IsValidISBN(isbn string) bool {
-	value := 0
+	checksum := 0
 	digitIndex := 0
 	isbnLen := len(isbn)
 
@@ -23,11 +23,11 @@ func IsValidISBN(isbn string) bool {
 			return false
 		}
 
-		value += digitValue(isbnDigit) * (10 - digitIndex)
+		checksum += digitValue(isbnDigit) * (10 - digitIndex)
 		digitIndex++
 	}
 
-	return digitIndex == 10 && value%11 == 0
+	return digitIndex == 10 && checksum%11 == 0
 }
 
 // isValidIsbnDigit checks if a character is a valid ISBN digit.
