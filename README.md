@@ -65,6 +65,11 @@ A classic **FizzBuzz** implementation that uses control flow and modulus operati
 A solution to the **Gigasecond** exercise on Exercism, which involves adding exactly 1 gigasecond (1 billion seconds) to a given time value.  
 See: [Exercism - Gigasecond](https://exercism.org/tracks/go/exercises/gigasecond).
 
+### gross-store
+A solution to the **Gross Store** exercise on Exercism, which involves managing a grocery store billing system. The solution includes functions to:
+This exercise helps practice working with maps, constants, and function design in Go.
+See: [Exercism - Gross Store](https://exercism.org/tracks/go/exercises/gross-store).
+
 ### guess-game
 Created a **number guessing game** where players guess a randomly chosen number. Focuses on generating random numbers and handling user input.
 
