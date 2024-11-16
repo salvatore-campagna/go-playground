@@ -3,6 +3,11 @@ package isbn
 
 import "unicode"
 
+const (
+	isbnXDigitValue     = 10
+	isbnChecksumDivisor = 11
+)
+
 // IsValidISBN checks if a given string is a valid ISBN-10.
 // An ISBN-10 is considered valid if it meets the following criteria:
 // - It consists of exactly 10 valid characters, which can be digits (0-9) or 'X'.
@@ -27,7 +32,7 @@ func IsValidISBN(isbn string) bool {
 		digitIndex++
 	}
 
-	return digitIndex == 10 && checksum%11 == 0
+	return digitIndex == 10 && checksum%isbnChecksumDivisor == 0
 }
 
 // isValidIsbnDigit checks if a character is a valid ISBN digit.
@@ -44,7 +49,7 @@ func isValidIsbnDigit(digit rune, index, length int) bool {
 // The character 'X' represents the value 10.
 func digitValue(digit rune) int {
 	if digit == 'X' {
-		return 10
+		return isbnXDigitValue
 	}
 	return int(digit - '0')
 }
