@@ -131,3 +131,4 @@ See: [Exercism - Word Count](https://exercism.org/tracks/go/exercises/word-count
 - [Go Garbage Collector Guide](https://tip.golang.org/doc/gc-guide)
 - [Pointer vs Value Methods](https://gronskiy.com/posts/2020-04-golang-pointer-vs-value-methods/)
 - [Go Language Specification](https://go.dev/ref/spec#Method_sets)
+- [Preemptive Interface Anti-Pattern in Go](https://medium.com/@cep21/preemptive-interface-anti-pattern-in-go-54c18ac0668a)
