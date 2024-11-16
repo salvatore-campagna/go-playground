@@ -136,6 +136,12 @@ See: [Exercism - Scrabble Score](https://exercism.org/tracks/go/exercises/scrabb
 A solution to the **Simple Cipher** exercise, implementing Caesar, Shift, and Vigenère ciphers for encoding/decoding text.  
 See: [Exercism - Simple Cipher](https://exercism.org/tracks/go/exercises/simple-cipher).
 
+### strain
+A solution to the **Strain** exercise on Exercism, which involves filtering slices based on a predicate function.
+This exercise demonstrates the use of Go's generics to implement flexible and reusable filtering functions.
+See: [Exercism - Strain](https://exercism.org/tracks/go/exercises/strain).
+
+
 ### two-fer
 A solution to the **Two Fer** exercise, focusing on functions and string interpolation.  
 See: [Exercism - Two Fer](https://exercism.org/tracks/go/exercises/two-fer).
