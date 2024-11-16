@@ -37,17 +37,17 @@ See: [Exercism - Card Tricks](https://exercism.org/tracks/go/exercises/card-tric
 A solution to the **Cars Assemble** exercise, practicing control flow and simple calculations.  
 See: [Exercism - Cars Assemble](https://exercism.org/tracks/go/exercises/cars-assemble).
 
+### chessboard
+A solution to the **Chessboard** exercise on Exercism, which involves counting squares on a chessboard represented using maps and slices.
+This exercise helps practice working with maps, slices, and loops in Go to efficiently analyze a chessboard's state.
+See: [Exercism - Chessboard](https://exercism.org/tracks/go/exercises/chessboard).
+
 ### collatz-conjecture
 A solution to the **Collatz Conjecture** exercise, implementing the famous mathematical sequence problem.  
 See: [Exercism - Collatz Conjecture](https://exercism.org/tracks/go/exercises/collatz-conjecture).
 
 ### darts
-A solution to the **Darts** exercise on Exercism, which involves calculating the score of a dart based on its (x, y) coordinates on a dartboard. The dartboard is divided into concentric circles with different scores:
-- 10 points if the dart lands within a radius of 1 unit.
-- 5 points if it lands between 1 and 5 units.
-- 1 point if it lands between 5 and 10 units.
-- 0 points if it lands outside a radius of 10 units.
-
+A solution to the **Darts** exercise on Exercism, which involves calculating the score of a dart based on its (x, y) coordinates on a dartboard. The dartboard is divided into concentric circles with different scores.
 See: [Exercism - Darts](https://exercism.org/tracks/go/exercises/darts).
 
 ### difference-of-squares
