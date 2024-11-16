@@ -9,7 +9,6 @@ import "unicode"
 // - Dashes ('-') are allowed but ignored during validation.
 // - The character 'X' is only allowed as the last character and represents the value 10.
 // - The checksum is calculated as: (10*d1 + 9*d2 + ... + 1*d10) % 11 == 0.
-// Returns true if the ISBN-10 is valid, otherwise returns false.
 func IsValidISBN(isbn string) bool {
 	value := 0
 	digitIndex := 0
@@ -24,14 +23,7 @@ func IsValidISBN(isbn string) bool {
 			return false
 		}
 
-		var digitValue int
-		if r == 'X' {
-			digitValue = 10
-		} else {
-			digitValue = int(r - '0')
-		}
-
-		value += digitValue * (10 - digitIndex)
+		value += digitValue(r) * (10 - digitIndex)
 		digitIndex++
 	}
 
@@ -46,4 +38,13 @@ func isValidIsbnDigit(digit rune, index, length int) bool {
 		return index == length-1
 	}
 	return unicode.IsDigit(digit)
+}
+
+// digitValue converts a rune to its corresponding integer value.
+// The character 'X' represents the value 10.
+func digitValue(digit rune) int {
+	if digit == 'X' {
+		return 10
+	}
+	return int(digit - '0')
 }
