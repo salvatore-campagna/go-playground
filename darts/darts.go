@@ -4,7 +4,6 @@ package darts
 
 import "math"
 
-// Define constants for the scoring regions.
 const (
 	innerCircleRadius  = 1.0
 	middleCircleRadius = 5.0
