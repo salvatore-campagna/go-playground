@@ -17,14 +17,14 @@ const (
 func IsValidISBN(isbn string) bool {
 	checksum := 0
 	digitIndex := 0
-	isbnLen := len(isbn)
+	isbnLength := len(isbn)
 
 	for i, isbnDigit := range isbn {
 		if isbnDigit == '-' {
 			continue
 		}
 
-		if !isValidIsbnDigit(isbnDigit, i, isbnLen) {
+		if !isValidIsbnDigit(isbnDigit, i, isbnLength) {
 			return false
 		}
 
@@ -38,11 +38,11 @@ func IsValidISBN(isbn string) bool {
 // isValidIsbnDigit checks if a character is a valid ISBN digit.
 // The character 'X' is only valid if it appears as the last character.
 // Otherwise, it must be a numeric digit (0-9).
-func isValidIsbnDigit(digit rune, index, length int) bool {
-	if digit == 'X' {
-		return index == length-1
+func isValidIsbnDigit(isbnDigit rune, isbnDigitIndex, isbnLength int) bool {
+	if isbnDigit == 'X' {
+		return isbnDigitIndex == isbnLength-1
 	}
-	return unicode.IsDigit(digit)
+	return unicode.IsDigit(isbnDigit)
 }
 
 // digitValue converts a rune to its corresponding integer value.
