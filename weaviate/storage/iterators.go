@@ -149,6 +149,9 @@ type PostingListIterator interface {
 
 	// TermFrequency returns the term frequency associated with the current document ID.
 	TermFrequency() (float32, error)
+
+	// CurrentBlock returns the current block being processed by the iterator.
+	CurrentBlock() *Block
 }
 
 // TermIterator implements PostingListIterator for traversing term posting lists in blocks.
@@ -239,62 +242,12 @@ func (it *TermIterator) TermFrequency() (float32, error) {
 	return block.TermFrequencies[rank-1], nil
 }
 
-// CoordinatedIterator handles intersection of multiple term iterators.
-type CoordinatedIterator struct {
-	iterators []PostingListIterator // List of term iterators
-}
-
-// NewCoordinatedIterator creates a new iterator for multiple terms.
-func NewCoordinatedIterator(iterators []PostingListIterator) *CoordinatedIterator {
-	return &CoordinatedIterator{iterators: iterators}
-}
-
-// Next advances to the next document common to all terms.
-func (ci *CoordinatedIterator) Next() (bool, error) {
-	for {
-		minDocID := uint32(0)
-		allMatch := true
-
-		// Find the smallest doc ID among iterators
-		for _, it := range ci.iterators {
-			docID, err := it.DocID()
-			if err != nil {
-				return false, err
-			}
-			if docID > minDocID {
-				minDocID = docID
-				allMatch = false
-			}
-		}
-
-		// If all iterators match, return true
-		if allMatch {
-			return true, nil
-		}
-
-		// Advance iterators that are behind
-		for _, it := range ci.iterators {
-			docID, err := it.DocID()
-			if err != nil {
-				return false, err
-			}
-			for docID < minDocID {
-				hasNext, err := it.Next()
-				if err != nil || !hasNext {
-					return false, err
-				}
-				docID, _ = it.DocID()
-			}
-		}
+// CurrentBlock returns the current block being processed by the iterator.
+func (it *TermIterator) CurrentBlock() *Block {
+	if it.currentBlock >= 0 && it.currentBlock < len(it.blocks) {
+		return it.blocks[it.currentBlock]
 	}
-}
-
-// DocID retrieves the current document ID.
-func (ci *CoordinatedIterator) DocID() (uint32, error) {
-	if len(ci.iterators) == 0 {
-		return 0, fmt.Errorf("no iterators available")
-	}
-	return ci.iterators[0].DocID()
+	return nil
 }
 
 // EmptyIterator provides a no-op implementation of PostingListIterator.
@@ -318,4 +271,9 @@ func (it *EmptyIterator) Term() string {
 // TermFrequency returns an error because there are no valid elements in the iterator.
 func (it *EmptyIterator) TermFrequency() (float32, error) {
 	return 0, fmt.Errorf("no valid TermFrequency in empty iterator")
+}
+
+// CurrentBlock returns nil because there are no blocks in an empty iterator.
+func (it *EmptyIterator) CurrentBlock() *Block {
+	return nil
 }

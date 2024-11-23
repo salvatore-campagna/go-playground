@@ -119,8 +119,9 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 				if err != nil {
 					return nil, fmt.Errorf("error retrieving DocID for term %s: %v", term, err)
 				}
+				block := iter.CurrentBlock()
 				heap.Push(blockHeap, &blockEntry{
-					block:    nil, // Block reference not required for doc-level queries
+					block:    block,
 					iterator: iter,
 					docID:    docID,
 				})
