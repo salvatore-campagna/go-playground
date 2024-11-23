@@ -34,11 +34,11 @@ type RoaringBitmapIterator struct {
 	currentDocID  uint32           // Current document ID
 	index         int              // Current index within the container
 	term          string           // Term associated with this iterator
-	termFrequency float32          // Mock or actual term frequency
+	termFrequency float32          // Term frequency of the term associated with this iterator
 }
 
 // NewRoaringBitmapIterator creates a new iterator for a RoaringBitmap and its associated term.
-func NewRoaringBitmapIterator(bitmap *RoaringBitmap, term string) *RoaringBitmapIterator {
+func NewRoaringBitmapIterator(bitmap *RoaringBitmap, term string, termFrequency float32) *RoaringBitmapIterator {
 	keys := make([]uint16, 0, len(bitmap.containers))
 	for key := range bitmap.containers {
 		keys = append(keys, key)
@@ -53,34 +53,31 @@ func NewRoaringBitmapIterator(bitmap *RoaringBitmap, term string) *RoaringBitmap
 		currentDocID:  0,
 		index:         -1,
 		term:          term,
-		termFrequency: 1.0, // Placeholder; replace with actual frequency logic if available
+		termFrequency: termFrequency,
 	}
 }
 
 // Next advances to the next document ID in the bitmap.
 func (it *RoaringBitmapIterator) Next() (bool, error) {
-	// Advance to the next valid document ID
 	for {
-		// Check if we need to move to the next container
+		// Move to the next container if no container or end of current container
 		if it.container == nil || it.index >= it.container.Cardinality()-1 {
 			it.currentKey++
 			if it.currentKey >= len(it.keys) {
 				// No more containers, iteration is complete
 				return false, nil
 			}
-			// Update the container for the new key
 			key := it.keys[it.currentKey]
 			it.container = it.bitmap.containers[key]
 			it.index = -1 // Reset index for the new container
 		}
 
-		// Advance within the current container
+		// Move inside the current container
 		it.index++
 		if it.index < it.container.Cardinality() {
 			if arrayContainer, ok := it.container.(*ArrayContainer); ok {
 				it.currentDocID = uint32(it.keys[it.currentKey])<<16 | uint32(arrayContainer.values[it.index])
 			} else if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
-				// Find the document ID for the current index
 				count := 0
 				for i, word := range bitmapContainer.Bitmap {
 					for j := 0; j < 64; j++ {
@@ -131,7 +128,6 @@ func (it *RoaringBitmapIterator) Term() string {
 
 // TermFrequency returns the term frequency associated with the current document ID.
 func (it *RoaringBitmapIterator) TermFrequency() (float32, error) {
-	// This is a placeholder. Implement actual logic to fetch term frequency from metadata if needed.
 	return it.termFrequency, nil
 }
 
@@ -203,7 +199,7 @@ func (it *TermIterator) Next() (bool, error) {
 		// Move to the next block
 		it.currentBlock++
 		if it.currentBlock >= len(it.blocks) {
-			return false, nil // No more blocks
+			return false, nil
 		}
 		it.blockIterator = it.blocks[it.currentBlock].Bitmap.BitmapIterator()
 	}
@@ -221,20 +217,17 @@ func (it *TermIterator) Term() string {
 
 // TermFrequency retrieves the term frequency for the current document.
 func (it *TermIterator) TermFrequency() (float32, error) {
-	// Validate currentBlock is within range
 	if it.currentBlock < 0 || it.currentBlock >= len(it.blocks) {
 		return 0, fmt.Errorf("invalid block index %d while retrieving term frequency", it.currentBlock)
 	}
 
 	block := it.blocks[it.currentBlock]
 
-	// Calculate rank
+	// rank is the index (+1) used to access Block.TermFrequencies
 	rank, err := block.Bitmap.Rank(it.currentDocID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate rank for docID %d: %w", it.currentDocID, err)
 	}
-
-	// Ensure the rank is valid and map it to 0-based indexing
 	if rank <= 0 || rank > len(block.TermFrequencies) {
 		return 0, fmt.Errorf("rank %d out of bounds for term frequencies (len=%d)", rank, len(block.TermFrequencies))
 	}

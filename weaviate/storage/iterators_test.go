@@ -8,8 +8,10 @@ import (
 
 func TestEmptyRoaringBitmapIterator(t *testing.T) {
 	t.Run("Empty Iterator", func(t *testing.T) {
-		bitmap := NewRoaringBitmap()
-		it := NewRoaringBitmapIterator(bitmap, "test-term")
+		it := &RoaringBitmapIterator{
+			bitmap: NewRoaringBitmap(),
+			term:   "test",
+		}
 
 		hasNext, err := it.Next()
 		if err != nil {
@@ -26,12 +28,12 @@ func TestBitmapIteratorSequential_BelowThreshold(t *testing.T) {
 	t.Run("Sequential Input Below Threshold", func(t *testing.T) {
 		bitmap := NewRoaringBitmap()
 
-		for i := 0; i < 4096; i++ {
+		for i := 0; i < 8192; i++ {
 			bitmap.Add(uint32(i))
 		}
 
-		it := NewRoaringBitmapIterator(bitmap, "test-term")
-		for i := 0; i < 4096; i++ {
+		it := NewRoaringBitmapIterator(bitmap, "test", 2.0)
+		for i := 0; i < 8192; i++ {
 			hasNext, err := it.Next()
 			if err != nil {
 				t.Fatalf("Unexpected error during iteration: %v", err)
@@ -66,7 +68,7 @@ func TestBitmapIteratorSequential_AboveThreshold(t *testing.T) {
 			bitmap.Add(uint32(i))
 		}
 
-		it := NewRoaringBitmapIterator(bitmap, "test-term")
+		it := NewRoaringBitmapIterator(bitmap, "test", 2.0)
 		for i := 0; i < 8192; i++ {
 			hasNext, err := it.Next()
 			if err != nil {
@@ -100,16 +102,16 @@ func TestBitmapIteratorRandom_MultipleContainers(t *testing.T) {
 		expectedValues := make([]uint32, 0)
 
 		for i := 0; i < 16*1024; i++ {
-			value := rand.Uint32() & 0xFFFFF // Mask to limit to 20-bit range
+			value := rand.Uint32() & 0xFFFFF
 			expectedValues = append(expectedValues, value)
 			bitmap.Add(value)
 		}
 
-		// Ensure uniqueness and sort values
+		// Ensure uniqueness and sort values (doc IDs in a container are in sort order)
 		expectedValues = removeDuplicates(expectedValues)
 		sort.Slice(expectedValues, func(i, j int) bool { return expectedValues[i] < expectedValues[j] })
 
-		it := NewRoaringBitmapIterator(bitmap, "test-term")
+		it := NewRoaringBitmapIterator(bitmap, "test", 2.0)
 		for i := 0; i < len(expectedValues); i++ {
 			hasNext, err := it.Next()
 			if err != nil {
@@ -146,7 +148,7 @@ func TestBitmapIteratorSparseValues(t *testing.T) {
 			bitmap.Add(value)
 		}
 
-		it := NewRoaringBitmapIterator(bitmap, "test-term")
+		it := NewRoaringBitmapIterator(bitmap, "test", 2.0)
 		for i, expected := range values {
 			hasNext, err := it.Next()
 			if err != nil {
