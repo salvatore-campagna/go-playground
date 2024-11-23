@@ -85,7 +85,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 	"weaviate/fetcher"
 )
@@ -123,7 +122,7 @@ type Block struct {
 	TermFrequencies []float32      // Term frequencies for each document
 }
 
-// PrintInfo prints out detailed information about the Segment in a nicely formatted table.
+// PrintInfo prints out detailed information about the Segment.
 func (s *Segment) PrintInfo() {
 	fmt.Printf("Segment Information\n\n")
 	fmt.Printf("Magic Number   : 0x%X\n", s.MagicNumber)
@@ -131,7 +130,6 @@ func (s *Segment) PrintInfo() {
 	fmt.Printf("Total Docs     : %d\n", s.DocIDs.Cardinality())
 	fmt.Printf("Total Terms    : %d\n", len(s.Terms))
 
-	// Print term-level summary
 	fmt.Printf("\n%-20s | %-12s | %-10s | %-10s |\n", "Term", "Documents", "Blocks", "Postings")
 	fmt.Println(strings.Repeat("-", 60))
 
@@ -158,7 +156,7 @@ func (s *Segment) PrintInfo() {
 	fmt.Println(strings.Repeat("-", 60))
 	fmt.Printf("\n%-20s | %-12d | %-10d | %-10d\n", "Overall", totalDocs, totalBlocks, totalPostings)
 
-	// Print block-level summary
+	// Block-level summary
 	fmt.Printf("\nDetailed Block Summary\n")
 	fmt.Printf("%-20s | %-8s | %-8s | %-8s | %-8s | %-8s |\n", "Term", "Block", "MinDocID", "MaxDocID", "Cardinality", "FreqLen")
 	fmt.Println(strings.Repeat("-", 75))
@@ -177,7 +175,6 @@ func (s *Segment) PrintInfo() {
 			fmt.Printf("%-20s | %-8d | %-8d | %-8d | %-8d | %-8d |\n", term, i+1, block.MinDocID, block.MaxDocID, blockCardinality, freqLen)
 		}
 
-		// Print term summary line
 		fmt.Printf("%-20s | %-8s | %-8s | %-8s | %-8d | %-8d |\n", term, "Total", "-", "-", termCardinality, termFreqLen)
 		fmt.Println(strings.Repeat("-", 75))
 	}
@@ -193,23 +190,22 @@ func NewSegment() *Segment {
 	}
 }
 
+// TotalDocs returns the total number of documents in the segment.
 func (s *Segment) TotalDocs() uint32 {
 	return uint32(s.DocIDs.Cardinality())
 }
 
-// BulkIndex adds a batch of documents to the segment.
+// BulkIndex adds a batch of terms to the segment.
 func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 	if len(documents) == 0 {
 		return nil
 	}
 
 	for _, document := range documents {
-		// Add the document ID to the segment-wide bitmap
 		if !s.DocIDs.Contains(document.DocID) {
 			s.DocIDs.Add(document.DocID)
 		}
 
-		// Retrieve or initialize metadata for the term
 		termMetadata, exists := s.Terms[document.Term]
 		if !exists {
 			termMetadata = &TermMetadata{
@@ -219,7 +215,7 @@ func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 			s.Terms[document.Term] = termMetadata
 		}
 
-		// Get the last block or create a new one if the current block is full
+		// Get the last block or create a new one if the current block is full (based on MaxExtriesPerBlock)
 		var block *Block
 		if len(termMetadata.Blocks) > 0 {
 			block = termMetadata.Blocks[len(termMetadata.Blocks)-1]
@@ -229,22 +225,22 @@ func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 				MinDocID:        document.DocID,
 				MaxDocID:        document.DocID,
 				Bitmap:          NewRoaringBitmap(),
-				TermFrequencies: make([]float32, 0, MaxEntriesPerBlock), // Preallocate for efficiency
+				TermFrequencies: make([]float32, 0),
 			}
 			termMetadata.Blocks = append(termMetadata.Blocks, block)
 		}
 
 		// Check if the document ID already exists in the block
 		if !block.Bitmap.Contains(document.DocID) {
-			// Add the document to the block
 			if err := block.AddDocument(document.DocID, document.TermFrequency); err != nil {
 				return fmt.Errorf("failed to add document to block: %w", err)
 			}
-
-			// Update block metadata
-			block.MaxDocID = document.DocID
-
-			// Increment TotalDocs for unique DocIDs in the term
+			if document.DocID < block.MinDocID {
+				block.MinDocID = document.DocID
+			}
+			if document.DocID > block.MaxDocID {
+				block.MaxDocID = document.DocID
+			}
 			termMetadata.TotalDocs++
 		}
 	}
@@ -255,13 +251,12 @@ func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 // NewBlock creates a new block for storing document IDs and term frequencies.
 func NewBlock() *Block {
 	return &Block{
-		Bitmap:          NewRoaringBitmap(), // Ensure this is initialized
-		TermFrequencies: make([]float32, 0), // Initialize with empty slice
+		Bitmap:          NewRoaringBitmap(),
+		TermFrequencies: make([]float32, 0),
 	}
 }
 
 // AddDocument adds a document's ID and term frequency to the block.
-// Document IDs should be added in ascending order for optimal performance.
 func (b *Block) AddDocument(docID uint32, termFrequency float32) error {
 	b.Bitmap.Add(docID)
 	b.TermFrequencies = append(b.TermFrequencies, termFrequency)
@@ -277,20 +272,16 @@ func (s *Segment) Serialize(writer io.Writer) error {
 	if err := binary.Write(writer, binary.LittleEndian, s.MagicNumber); err != nil {
 		return err
 	}
-
 	if err := binary.Write(writer, binary.LittleEndian, s.Version); err != nil {
 		return err
 	}
-
 	if err := s.DocIDs.Serialize(writer); err != nil {
 		return fmt.Errorf("failed to serialize DocIDs bitmap: %w", err)
 	}
-
 	numTerms := uint32(len(s.Terms))
 	if err := binary.Write(writer, binary.LittleEndian, numTerms); err != nil {
 		return err
 	}
-
 	for term, metadata := range s.Terms {
 		termLen := uint16(len(term))
 		if err := binary.Write(writer, binary.LittleEndian, termLen); err != nil {
@@ -299,30 +290,23 @@ func (s *Segment) Serialize(writer io.Writer) error {
 		if _, err := writer.Write([]byte(term)); err != nil {
 			return err
 		}
-
 		if err := binary.Write(writer, binary.LittleEndian, metadata.TotalDocs); err != nil {
 			return err
 		}
-
 		numBlocks := uint32(len(metadata.Blocks))
 		if err := binary.Write(writer, binary.LittleEndian, numBlocks); err != nil {
 			return err
 		}
-
 		for _, block := range metadata.Blocks {
 			if err := block.Serialize(writer); err != nil {
 				return err
 			}
 		}
 	}
-
 	return nil
 }
 
 // Segment.Deserialize reads a segment from the provided reader.
-// The reader must provide data in the exact format produced by Serialize.
-// Returns an error if the data format is invalid or if the magic number
-// or version don't match expected values.
 func (s *Segment) Deserialize(reader io.Reader) error {
 	if err := binary.Read(reader, binary.LittleEndian, &s.MagicNumber); err != nil {
 		return err
@@ -330,17 +314,15 @@ func (s *Segment) Deserialize(reader io.Reader) error {
 	if err := binary.Read(reader, binary.LittleEndian, &s.Version); err != nil {
 		return err
 	}
-
 	if err := s.DocIDs.Deserialize(reader); err != nil {
 		return fmt.Errorf("failed to deserialize DocIDs bitmap: %w", err)
 	}
-
 	var numTerms uint32
 	if err := binary.Read(reader, binary.LittleEndian, &numTerms); err != nil {
 		return err
 	}
-	s.Terms = make(map[string]*TermMetadata)
 
+	s.Terms = make(map[string]*TermMetadata)
 	for i := 0; i < int(numTerms); i++ {
 		var termLen uint16
 		if err := binary.Read(reader, binary.LittleEndian, &termLen); err != nil {
@@ -351,12 +333,13 @@ func (s *Segment) Deserialize(reader io.Reader) error {
 		if _, err := io.ReadFull(reader, termBytes); err != nil {
 			return err
 		}
+
 		term := string(termBytes)
 		termMeta := &TermMetadata{}
-
 		if err := binary.Read(reader, binary.LittleEndian, &termMeta.TotalDocs); err != nil {
 			return err
 		}
+
 		var numBlocks uint32
 		if err := binary.Read(reader, binary.LittleEndian, &numBlocks); err != nil {
 			return err
@@ -385,7 +368,7 @@ func (s *Segment) Deserialize(reader io.Reader) error {
 	return nil
 }
 
-// Block.Serialize writes a block to the provided writer.
+// Serialize writes a block to the provided writer.
 func (b *Block) Serialize(writer io.Writer) error {
 	if err := binary.Write(writer, binary.LittleEndian, b.MinDocID); err != nil {
 		return fmt.Errorf("failed to write minDocID: %w", err)
@@ -397,18 +380,14 @@ func (b *Block) Serialize(writer io.Writer) error {
 		return fmt.Errorf("failed to serialize bitmap: %w", err)
 	}
 
-	// Write term frequencies using delta + varint encoding
 	numFreqs := uint32(len(b.TermFrequencies))
 	if err := binary.Write(writer, binary.LittleEndian, numFreqs); err != nil {
 		return fmt.Errorf("failed to write number of term frequencies: %w", err)
 	}
-	prevFreq := float32(0)
 	for _, freq := range b.TermFrequencies {
-		delta := freq - prevFreq
-		if err := binary.Write(writer, binary.LittleEndian, delta); err != nil {
+		if err := binary.Write(writer, binary.LittleEndian, freq); err != nil {
 			return fmt.Errorf("failed to write term frequency delta: %w", err)
 		}
-		prevFreq = freq
 	}
 	return nil
 }
@@ -430,20 +409,17 @@ func (b *Block) Deserialize(reader io.Reader) error {
 		return fmt.Errorf("failed to read number of term frequencies: %w", err)
 	}
 	b.TermFrequencies = make([]float32, numFreqs)
-	prevFreq := float32(0)
 	for i := uint32(0); i < numFreqs; i++ {
-		var delta float32
-		if err := binary.Read(reader, binary.LittleEndian, &delta); err != nil {
+		var freq float32
+		if err := binary.Read(reader, binary.LittleEndian, &freq); err != nil {
 			return fmt.Errorf("failed to read term frequency delta: %w", err)
 		}
-		b.TermFrequencies[i] = prevFreq + delta
-		prevFreq = b.TermFrequencies[i]
+		b.TermFrequencies[i] = freq
 	}
 	return nil
 }
 
 // WriteSegment writes a Segment to an io.Writer, typically a file.
-// This is a convenience wrapper around Serialize.
 func (s *Segment) WriteSegment(writer io.Writer) error {
 	if err := s.Serialize(writer); err != nil {
 		return fmt.Errorf("failed to serialize segment: %w", err)
@@ -452,48 +428,9 @@ func (s *Segment) WriteSegment(writer io.Writer) error {
 }
 
 // ReadSegment reads a Segment from an io.Reader, typically a file.
-// This is a convenience wrapper around Deserialize.
 func (s *Segment) ReadSegment(reader io.Reader) error {
 	if err := s.Deserialize(reader); err != nil {
 		return fmt.Errorf("failed to deserialize segment: %w", err)
 	}
 	return nil
-}
-
-func (s *Segment) TermIterator(term string) (PostingListIterator, error) {
-	termMetadata, exists := s.Terms[term]
-	if !exists {
-		return &EmptyIterator{}, nil
-	}
-	return NewTermIterator(termMetadata.Blocks, term), nil
-}
-
-func (s *Segment) TermIterators(terms []string) ([]PostingListIterator, error) {
-	var termIterators []PostingListIterator
-	for _, term := range terms {
-		termIterator, err := s.TermIterator(term)
-		if err != nil {
-			return nil, err
-		}
-		termIterators = append(termIterators, termIterator)
-	}
-
-	return termIterators, nil
-}
-
-func (rb *RoaringBitmap) Iterator() BitmapIterator {
-	keys := make([]uint16, 0, len(rb.containers))
-	for key := range rb.containers {
-		keys = append(keys, key)
-	}
-
-	sort.Slice(keys, func(i, j int) bool {
-		return keys[i] < keys[j]
-	})
-
-	return &RoaringBitmapIterator{
-		bitmap:     rb,
-		keys:       keys,
-		currentKey: -1,
-	}
 }

@@ -177,7 +177,7 @@ func NewTermIterator(blocks []*Block, term string) PostingListIterator {
 	return &TermIterator{
 		blocks:        blocks,
 		currentBlock:  0,
-		blockIterator: firstBlock.Bitmap.Iterator(),
+		blockIterator: firstBlock.Bitmap.BitmapIterator(),
 		term:          term,
 	}
 }
@@ -205,7 +205,7 @@ func (it *TermIterator) Next() (bool, error) {
 		if it.currentBlock >= len(it.blocks) {
 			return false, nil // No more blocks
 		}
-		it.blockIterator = it.blocks[it.currentBlock].Bitmap.Iterator()
+		it.blockIterator = it.blocks[it.currentBlock].Bitmap.BitmapIterator()
 	}
 }
 
@@ -248,6 +248,47 @@ func (it *TermIterator) CurrentBlock() *Block {
 		return it.blocks[it.currentBlock]
 	}
 	return nil
+}
+
+// TermIterator returns a PostingListIterator for the specified term.
+func (s *Segment) TermIterator(term string) (PostingListIterator, error) {
+	termMetadata, exists := s.Terms[term]
+	if !exists {
+		return &EmptyIterator{}, nil
+	}
+	return NewTermIterator(termMetadata.Blocks, term), nil
+}
+
+// TermIterators returns PostingListIterators for a list of terms.
+func (s *Segment) TermIterators(terms []string) ([]PostingListIterator, error) {
+	var termIterators []PostingListIterator
+	for _, term := range terms {
+		termIterator, err := s.TermIterator(term)
+		if err != nil {
+			return nil, err
+		}
+		termIterators = append(termIterators, termIterator)
+	}
+
+	return termIterators, nil
+}
+
+// BitmapIterator returns a BitmapIterator for the RoaringBitmap.
+func (rb *RoaringBitmap) BitmapIterator() BitmapIterator {
+	keys := make([]uint16, 0, len(rb.containers))
+	for key := range rb.containers {
+		keys = append(keys, key)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	return &RoaringBitmapIterator{
+		bitmap:     rb,
+		keys:       keys,
+		currentKey: -1,
+	}
 }
 
 // EmptyIterator provides a no-op implementation of PostingListIterator.
