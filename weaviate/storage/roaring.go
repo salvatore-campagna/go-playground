@@ -6,15 +6,19 @@ package storage
 
 // TODO: Use Rank method to access terms effeciently
 // TODO: Implement Run-Length Encoding (RLE) container
-// TODO: Use Run-Length Encoding (RLE) to encode the BitmapContainer
 // TODO: Implement varint encoding for container metadata
 // TODO: Add versioning support for serialization format
 // TODO: Evaluate implementing SIMD operations for bitmap operations (Go Assembly)
 // TODO: Add container-level parallel prcoessing
 // TODO: Implement bulk Add operation
-// TODO: do we need support for concurrent access?
-// TODO: consider using Snappy or Zstandard to comrpess serialized data
-// TODO: use custom errors instead fmt.Errorf
+// TODO: Do we need support for concurrent access?
+// TODO: Consider using Snappy or Zstandard to comrpess serialized data
+// TODO: Use custom errors instead fmt.Errorf
+// TODO: Benchmarking and Profiling to guide optimizations
+// TODO: Support for more operations like NOT or XOR or DIFF
+// TODO: Add checksums to check for data integrity
+// TODO: Explore other compression mechanisms
+// TODO: Implement Diff inc ase we need to support DELETE operations on documents
 
 import (
 	"encoding/binary"
