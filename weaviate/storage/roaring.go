@@ -220,27 +220,19 @@ type BitmapContainer struct {
 	cardinality int
 }
 
-// NewBitmapContainer creates an empty BitmapContainer.
+// NewBitmapContainer creates a fixed-size BitmapContainer to handle all possible uint16 values.
 func NewBitmapContainer() *BitmapContainer {
 	return &BitmapContainer{
-		Bitmap:      make([]uint64, 0), // Start with full uint16 range
+		Bitmap:      make([]uint64, 1024), // Preallocate for 65536 bits (1024 * 64 bits)
 		cardinality: 0,
 	}
 }
 
-// Add sets the bit corresponding to the value in the bitmap.
 func (bc *BitmapContainer) Add(value uint16) {
 	word := value / 64
 	bit := value % 64
 
-	// Dynamically expand if necessary
-	if int(word) >= len(bc.Bitmap) {
-		newBitmap := make([]uint64, word+1)
-		copy(newBitmap, bc.Bitmap)
-		bc.Bitmap = newBitmap
-	}
-
-	// Update the bit and cardinality
+	// Directly set the bit in the preallocated bitmap
 	if (bc.Bitmap[word] & (1 << bit)) == 0 {
 		bc.Bitmap[word] |= (1 << bit)
 		bc.cardinality++
@@ -258,6 +250,7 @@ func (bc *BitmapContainer) BulkAdd(values []uint16) {
 func (bc *BitmapContainer) Contains(value uint16) bool {
 	word := value / 64
 	bit := value % 64
+
 	return (bc.Bitmap[word] & (1 << bit)) != 0
 }
 

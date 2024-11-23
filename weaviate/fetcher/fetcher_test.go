@@ -29,7 +29,7 @@ func TestParseJsonSegments(t *testing.T) {
 		]
 	}`
 
-	segments, err := ParseJsonSegments([]byte(validJson))
+	segments, err := ParseTermPostings([]byte(validJson))
 	if err != nil {
 		t.Errorf("Failed to parse valid JSON: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestParseJsonSegments(t *testing.T) {
 
 func TestEmptySegments(t *testing.T) {
 	emptyJson := `{"segments":[]}`
-	segments, err := ParseJsonSegments([]byte(emptyJson))
+	segments, err := ParseTermPostings([]byte(emptyJson))
 	if err != nil {
 		t.Errorf("Failed to parse empty segments: %v", err)
 	}

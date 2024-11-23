@@ -16,12 +16,12 @@ func TestSegmentSerialization(t *testing.T) {
 	segment := NewSegment()
 
 	// Group documents by term before adding them
-	termGroups := make(map[string][]fetcher.JsonDocument)
+	termGroups := make(map[string][]fetcher.TermPosting)
 
 	// First, group all documents by their term
 	for value, included := range values {
 		if included {
-			doc := fetcher.JsonDocument{
+			doc := fetcher.TermPosting{
 				Term:          fmt.Sprintf("term_%d", value),
 				DocID:         value,
 				TermFrequency: rand.Float32(),
@@ -96,7 +96,7 @@ func TestSegmentSerialization(t *testing.T) {
 func TestSegmentTermLookup(t *testing.T) {
 	segment := NewSegment()
 
-	docs := []fetcher.JsonDocument{
+	docs := []fetcher.TermPosting{
 		{Term: "jedi", DocID: 123, TermFrequency: 0.5},
 	}
 

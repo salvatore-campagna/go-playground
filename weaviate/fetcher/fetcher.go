@@ -9,16 +9,16 @@ import (
 	"strings"
 )
 
-// JsonDocument represents a single entry in the segment JSON
-type JsonDocument struct {
+// TermPosting represents a single entry in the segment JSON
+type TermPosting struct {
 	Term          string  `json:"term"`
 	DocID         uint32  `json:"doc_id"`
 	TermFrequency float32 `json:"term_frequency"`
 }
 
-// Root represents the top-level structure of the JSON file
-type Root struct {
-	Segments [][]JsonDocument `json:"segments"`
+// TermPostingRoot represents the top-level structure of the JSON file
+type TermPostingRoot struct {
+	Segments [][]TermPosting `json:"segments"`
 }
 
 // FetchJson fetches JSON data from either a URL or a local file path.
@@ -50,9 +50,9 @@ func FetchJson(path string) ([]byte, error) {
 	return data, nil
 }
 
-// ParseJsonSegments parses the JSON data into a slice of segments
-func ParseJsonSegments(data []byte) ([][]JsonDocument, error) {
-	var root Root
+// ParseTermPostings parses the JSON data into a slice of segments
+func ParseTermPostings(data []byte) ([][]TermPosting, error) {
+	var root TermPostingRoot
 	if err := json.Unmarshal(data, &root); err != nil {
 		return nil, fmt.Errorf("failed to parse json: %w", err)
 	}

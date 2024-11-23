@@ -1,29 +1,41 @@
 .DEFAULT_GOAL := help
 
-.PHONY: all build clean run-create-index run-query-index run-data-gen test fmt vet
+.PHONY: all build clean dataclean datagen stats index query test fmt vet help
 
 BIN_DIR := bin
-CREATE_INDEX := $(BIN_DIR)/create-index
-QUERY_INDEX := $(BIN_DIR)/query-index
-DATA_GEN := $(BIN_DIR)/data-gen
+CREATE_INDEX := $(BIN_DIR)/index
+QUERY_INDEX := $(BIN_DIR)/query
+DATA_GEN := $(BIN_DIR)/datagen
+STATS := $(BIN_DIR)/stats
+DATA_CLEAN := $(BIN_DIR)/dataclean
 
-# Build all executables
-build: $(CREATE_INDEX) $(QUERY_INDEX) $(DATA_GEN) test
+JSON_FILE := segments.json
+SEGMENT_DIR := segment-data
+STATS_FILE := stats.txt
+DATA_CLEAN_INPUT_FILE := data/segments.json
+DATA_CLEAN_OUTPUT_FILE := segments.json
 
-# Build create-index executable
-$(CREATE_INDEX): clean cmd/create-index/main.go
+build: $(CREATE_INDEX) $(QUERY_INDEX) $(DATA_GEN) $(STATS) $(DATA_CLEAN) test
+
+$(CREATE_INDEX): clean cmd/index/main.go
 	@mkdir -p $(BIN_DIR)
-	go build -o $(CREATE_INDEX) cmd/create-index/main.go
+	go build -o $(CREATE_INDEX) cmd/index/main.go
 
-# Build query-index executable
-$(QUERY_INDEX): clean cmd/query-index/main.go
+$(QUERY_INDEX): clean cmd/query/main.go
 	@mkdir -p $(BIN_DIR)
-	go build -o $(QUERY_INDEX) cmd/query-index/main.go
+	go build -o $(QUERY_INDEX) cmd/query/main.go
 
-# Build data-gen executable
-$(DATA_GEN): clean cmd/data-gen/main.go
+$(DATA_GEN): clean cmd/datagen/main.go
 	@mkdir -p $(BIN_DIR)
-	go build -o $(DATA_GEN) cmd/data-gen/main.go
+	go build -o $(DATA_GEN) cmd/datagen/main.go
+
+$(STATS): clean cmd/stats/main.go
+	@mkdir -p $(BIN_DIR)
+	go build -o $(STATS) cmd/stats/main.go
+
+$(DATA_CLEAN): clean cmd/dataclean/main.go
+	@mkdir -p $(BIN_DIR)
+	go build -o $(DATA_CLEAN) cmd/dataclean/main.go
 
 test: vet
 	go test ./...
@@ -38,35 +50,42 @@ vet: fmt
 	go vet ./...
 
 delete:
-	rm -rf segment-data
-	rm -rf
+	rm -rf $(SEGMENT_DIR)
 
-# Run create-index executable
-run-create-index: $(CREATE_INDEX)
-	./$(CREATE_INDEX) -dir segment-data
+index: $(CREATE_INDEX)
+	./$(CREATE_INDEX) -path $(JSON_FILE) -dir $(SEGMENT_DIR)
 
-# Run query-index executable
-run-query-index: $(QUERY_INDEX)
-	./$(QUERY_INDEX) -dir segment-data
+query: $(QUERY_INDEX)
+	./$(QUERY_INDEX) -dir $(SEGMENT_DIR)
 
-# Run data-gen executable
-run-data-gen: $(DATA_GEN)
-	./$(DATA_GEN) -output generated_segments.json
+datagen: $(DATA_GEN)
+	./$(DATA_GEN) -path $(JSON_FILE)
 
-# Clean up built executables
+stats: $(STATS)
+	./$(STATS) -path $(JSON_FILE) > $(STATS_FILE)
+
+dataclean: $(DATA_CLEAN)
+	./$(DATA_CLEAN) -input $(DATA_CLEAN_INPUT_FILE) -output $(DATA_CLEAN_OUTPUT_FILE)
+
 clean:
 	rm -rf $(BIN_DIR)
 
-# Display help
 help:
 	@echo "Makefile for building and running executables"
 	@echo "Usage:"
 	@echo "  make build                - Build all executables"
-	@echo "  make run-create-index     - Run the create-index executable"
-	@echo "  make run-query-index      - Run the query-index executable"
-	@echo "  make run-data-gen         - Run the data-gen executable"
+	@echo "  make index                - Run the create-index executable"
+	@echo "  make query                - Run the query-index executable"
+	@echo "  make datagen              - Run the data-gen executable"
+	@echo "  make stats                - Run the stats executable"
 	@echo "  make clean                - Remove all built files"
 	@echo "  make test                 - Run tests"
 	@echo "  make fmt                  - Format Go code"
 	@echo "  make vet                  - Run go vet"
-
+	@echo ""
+	@echo "Optional parameters (set using 'make param=value'):"
+	@echo "  JSON_FILE                 - Path to the data generation input file (default: segments_clean.json)"
+	@echo "  SEGMENT_DIR               - Directory for segment data (default: segment-data)"
+	@echo "  STATS_FILE                - Path to the statistics output file (default: stats_output.txt)"
+	@echo "  DATA_CLEAN_INPUT_FILE     - Path to the data clean input file (default: segments.json)"
+	@echo "  DATA_CLEAN_OUTPUT_FILE    - Path to the data clean output file (default: segments_clean.json)"

@@ -24,9 +24,8 @@ type RoaringBitmapIterator struct {
 	bitmap       *RoaringBitmap   // The RoaringBitmap being iterated
 	keys         []uint16         // Keys identifying the containers in the bitmap
 	currentKey   int              // Index of the current key
+	currentIndex int              // CUrrent position in the container
 	container    RoaringContainer // Current container being iterated
-	currentDocID uint32           // Current document ID
-	index        int              // Current index within the container
 }
 
 func NewRoaringBitmapIterator(bitmap *RoaringBitmap) *RoaringBitmapIterator {
@@ -37,87 +36,58 @@ func NewRoaringBitmapIterator(bitmap *RoaringBitmap) *RoaringBitmapIterator {
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] }) // Ensure keys are sorted
 
 	return &RoaringBitmapIterator{
-		bitmap:     bitmap,
-		keys:       keys,
-		currentKey: -1, // Start before the first key
-		index:      -1, // Start before the first index
+		bitmap:       bitmap,
+		keys:         keys,
+		currentKey:   -1,
+		currentIndex: -1,
 	}
 }
 
-// Next advances the iterator to the next document ID in the bitmap.
-// It handles switching between containers and returns false if there are no more document IDs.
+// Next advances to the next document ID.
 func (it *RoaringBitmapIterator) Next() (bool, error) {
 	for {
-		if it.currentKey == -1 {
-			it.currentKey = 0
+		// Move to the next container if needed
+		if it.currentKey == -1 || it.currentIndex >= it.container.Cardinality()-1 {
+			it.currentKey++
 			if it.currentKey >= len(it.keys) {
-				return false, nil
+				return false, nil // No more containers
 			}
 			key := it.keys[it.currentKey]
-			container, exists := it.bitmap.containers[key]
-			if !exists {
-				return false, fmt.Errorf("container not found for key %d", key)
-			}
-			it.container = container
-			it.index = -1
+			it.container = it.bitmap.containers[key]
+			it.currentIndex = -1
 		}
 
-		if it.index >= -1 && it.index < it.container.Cardinality()-1 {
-			it.index++
-			docID, err := it.GetDocID()
-			if err == nil {
-				it.currentDocID = docID
-				return true, nil
-			}
-			return false, err
+		// Advance within the current container
+		it.currentIndex++
+		if it.currentIndex < it.container.Cardinality() {
+			return true, nil
 		}
-
-		it.currentKey++
-		if it.currentKey >= len(it.keys) {
-			return false, nil
-		}
-
-		key := it.keys[it.currentKey]
-		container, exists := it.bitmap.containers[key]
-		if !exists {
-			return false, fmt.Errorf("container not found for key %d", key)
-		}
-		it.container = container
-		it.index = -1
 	}
 }
 
-// GetDocID calculates the document ID for the current index within the container.
-func (it *RoaringBitmapIterator) GetDocID() (uint32, error) {
+// DocID retrieves the current document ID.
+func (it *RoaringBitmapIterator) DocID() (uint32, error) {
+	if it.currentKey < 0 || it.currentKey >= len(it.keys) {
+		return 0, fmt.Errorf("invalid key while iterating container")
+	}
 	key := uint32(it.keys[it.currentKey]) << 16
 	if arrayContainer, ok := it.container.(*ArrayContainer); ok {
-		if it.index < len(arrayContainer.values) {
-			return key | uint32(arrayContainer.values[it.index]), nil
-		}
-		return 0, fmt.Errorf("index out of bounds in array container")
-	} else if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
+		return key | uint32(arrayContainer.values[it.currentIndex]), nil
+	}
+	if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
 		count := 0
 		for i, word := range bitmapContainer.Bitmap {
 			for j := 0; j < 64; j++ {
 				if word&(1<<j) != 0 {
-					if count == it.index {
+					if count == it.currentIndex {
 						return key | uint32(i*64+j), nil
 					}
 					count++
 				}
 			}
 		}
-		return 0, fmt.Errorf("index out of bounds in bitmap container")
 	}
 	return 0, fmt.Errorf("unknown container type")
-}
-
-// DocID returns the current document ID of the iterator.
-func (it *RoaringBitmapIterator) DocID() (uint32, error) {
-	if it.currentKey < 0 || it.currentKey >= len(it.keys) {
-		return 0, fmt.Errorf("current key %d is out of bounds", it.currentKey)
-	}
-	return it.currentDocID, nil
 }
 
 // PostingListIterator defines an interface for iterating over posting lists.
@@ -135,83 +105,132 @@ type PostingListIterator interface {
 
 // TermIterator implements PostingListIterator for traversing term posting lists in blocks.
 type TermIterator struct {
-	blocks          []*Block       // Posting list blocks for the term
-	currentBlock    int            // Index of the current block
-	bitmapIterator  BitmapIterator // Iterator for the current block's bitmap
-	currentDocId    uint32         // Current document ID
-	currentTermFreq float32        // Current term frequency
-	blockIndex      int            // Current index within the block
+	blocks        []*Block       // Posting list blocks for the term
+	currentBlock  int            // Index of the current block
+	blockIterator BitmapIterator // Iterator for the current block's bitmap
+	currentDocID  uint32         // Current document ID
 }
 
-// Next advances the iterator to the next document in the posting list.
-// It switches blocks when necessary and calculates term frequencies for documents.
+// NewTermIterator creates a new TermIterator for the given blocks.
+func NewTermIterator(blocks []*Block) PostingListIterator {
+	if len(blocks) == 0 {
+		return &EmptyIterator{}
+	}
+
+	firstBlock := blocks[0]
+	if firstBlock == nil || firstBlock.Bitmap == nil {
+		return &EmptyIterator{}
+	}
+
+	return &TermIterator{
+		blocks:        blocks,
+		currentBlock:  0,
+		blockIterator: firstBlock.Bitmap.Iterator(),
+	}
+}
+
+// Next advances to the next document in the posting list.
 func (it *TermIterator) Next() (bool, error) {
 	for {
-		if it.bitmapIterator != nil {
-			hasNext, err := it.bitmapIterator.Next()
+		// Try advancing within the current block
+		if it.blockIterator != nil {
+			hasNext, err := it.blockIterator.Next()
 			if err != nil {
 				return false, err
 			}
-
 			if hasNext {
-				it.currentDocId, err = it.bitmapIterator.DocID()
+				docID, err := it.blockIterator.DocID()
 				if err != nil {
 					return false, err
 				}
-
-				it.currentTermFreq, err = it.getTermFrequency(it.currentDocId)
-				if err != nil {
-					return false, err
-				}
+				it.currentDocID = docID
 				return true, nil
 			}
 		}
 
+		// Move to the next block
 		it.currentBlock++
 		if it.currentBlock >= len(it.blocks) {
-			return false, nil
+			return false, nil // No more blocks
 		}
-
-		it.bitmapIterator = it.blocks[it.currentBlock].Bitmap.Iterator()
+		it.blockIterator = it.blocks[it.currentBlock].Bitmap.Iterator()
 	}
 }
 
-// DocID retrieves the current document ID in the posting list.
+// DocID retrieves the current document ID.
 func (it *TermIterator) DocID() (uint32, error) {
-	if it.bitmapIterator == nil {
-		return 0, fmt.Errorf("bitmap iterator is null")
-	}
-	return it.currentDocId, nil
+	return it.currentDocID, nil
 }
 
-// TermFrequency retrieves the term frequency for the current document ID.
+// TermFrequency retrieves the term frequency for the current document.
 func (it *TermIterator) TermFrequency() (float32, error) {
-	if it.bitmapIterator == nil {
-		return 0, fmt.Errorf("bitmap iterator is null")
-	}
-	return it.currentTermFreq, nil
-}
-
-// getTermFrequency retrieves the term frequency for the specified document ID.
-func (it *TermIterator) getTermFrequency(docID uint32) (float32, error) {
-	if it.currentBlock < 0 || it.currentBlock >= len(it.blocks) {
-		return 0, fmt.Errorf("block index %d is out of bounds", it.currentBlock)
-	}
-
 	block := it.blocks[it.currentBlock]
-	if !block.Bitmap.Contains(docID) {
-		return 0, fmt.Errorf("docID %d does not exist in the bitmap", docID)
-	}
-
-	rank, err := block.Bitmap.Rank(docID)
+	rank, err := block.Bitmap.Rank(it.currentDocID)
 	if err != nil {
 		return 0, err
 	}
-
-	if rank < 0 || rank > len(block.TermFrequencies) {
-		return 0, fmt.Errorf("rank %d is out of bounds for term frequencies with len %d", rank, len(block.TermFrequencies))
+	if rank <= 0 || rank > len(block.TermFrequencies) {
+		return 0, fmt.Errorf("rank out of bounds for term frequencies")
 	}
 	return block.TermFrequencies[rank-1], nil
+}
+
+// CoordinatedIterator handles intersection of multiple term iterators.
+type CoordinatedIterator struct {
+	iterators []PostingListIterator // List of term iterators
+}
+
+// NewCoordinatedIterator creates a new iterator for multiple terms.
+func NewCoordinatedIterator(iterators []PostingListIterator) *CoordinatedIterator {
+	return &CoordinatedIterator{iterators: iterators}
+}
+
+// Next advances to the next document common to all terms.
+func (ci *CoordinatedIterator) Next() (bool, error) {
+	for {
+		minDocID := uint32(0)
+		allMatch := true
+
+		// Find the smallest doc ID among iterators
+		for _, it := range ci.iterators {
+			docID, err := it.DocID()
+			if err != nil {
+				return false, err
+			}
+			if docID > minDocID {
+				minDocID = docID
+				allMatch = false
+			}
+		}
+
+		// If all iterators match, return true
+		if allMatch {
+			return true, nil
+		}
+
+		// Advance iterators that are behind
+		for _, it := range ci.iterators {
+			docID, err := it.DocID()
+			if err != nil {
+				return false, err
+			}
+			for docID < minDocID {
+				hasNext, err := it.Next()
+				if err != nil || !hasNext {
+					return false, err
+				}
+				docID, _ = it.DocID()
+			}
+		}
+	}
+}
+
+// DocID retrieves the current document ID.
+func (ci *CoordinatedIterator) DocID() (uint32, error) {
+	if len(ci.iterators) == 0 {
+		return 0, fmt.Errorf("no iterators available")
+	}
+	return ci.iterators[0].DocID()
 }
 
 // EmptyIterator provides a no-op implementation of PostingListIterator.
