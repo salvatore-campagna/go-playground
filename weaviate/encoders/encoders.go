@@ -1,29 +1,48 @@
 // Package encoders provides implementations for encoding and decoding arrays of uint16 values
-// using different compression techniques like Delta and Plain encoding. These encoders are useful
-// for efficiently storing sequences of numbers, particularly in scenarios where data can benefit
-// from delta compression (e.g., sorted or sequential data).
+// using different compression techniques such as Delta and Plain encoding. These encoders are
+// designed for efficient storage and transmission of sequences of numbers, particularly when
+// data exhibits patterns that benefit from compression (e.g., sorted or sequential values).
+//
+// # Encoding Techniques
+//
+//  1. **Delta Encoding**: Stores the difference between consecutive values. This is efficient
+//     for sequences with small or predictable increments. Combined with variable-length encoding
+//     (varint), it achieves further compression.
+//
+//  2. **Plain Encoding**: Writes values directly without compression. Suitable for datasets
+//     where values are random or do not exhibit compressible patterns.
+//
+// # TODOs
+//
+//   - Explore additional encoding techniques such as Run-Length Encoding (RLE)
+//     for datasets with repeated values.
+//   - Evaluate the performance and space efficiency of hybrid encoders that
+//     dynamically choose between Delta and Plain encoding based on input characteristics.
+//   - Investigate SIMD (Single Instruction, Multiple Data) optimizations for faster encoding and decoding.
+//   - Add support for other data types (e.g., uint32, float32) for broader applicability.
+//   - Benchmark encoding and decoding implementations under various scenarios
+//     to determine performance bottlenecks and optimize accordingly.
+//   - Implement error handling improvements, including more descriptive error messages
+//     for boundary conditions like overflow in varint encoding.
 package encoders
-
-// TODO: experiment with other encoders
 
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 )
 
 // ArrayEncoder defines the interface for encoding an array of uint16 values to a writer.
 type ArrayEncoder interface {
 	// Encode encodes the given array of uint16 values and writes it to the provided writer.
-	// It returns an error if any encoding or writing operation fails.
+	// Returns an error if encoding or writing fails.
 	Encode(values []uint16, writer io.Writer) error
 }
 
 // ArrayDecoder defines the interface for decoding an array of uint16 values from a reader.
 type ArrayDecoder interface {
-	// Decode reads a specified number of uint16 values from the reader and returns them as an array.
-	// It returns an error if any reading or decoding operation fails.
+	// Decode reads a specified number of uint16 values from the reader and reconstructs the array.
+	// Returns an error if decoding or reading fails.
 	Decode(reader io.Reader, length int) ([]uint16, error)
 }
 
@@ -33,15 +52,16 @@ type ArrayEncoderDecoder interface {
 	ArrayDecoder
 }
 
-// DeltaEncoder implements ArrayEncoder and ArrayDecoder using delta encoding with varint compression.
-// Delta encoding is a compression technique where each value in the sequence is stored as the difference
-// from the previous value, which is then encoded using variable-length integers.
+// DeltaEncoder implements ArrayEncoder and ArrayDecoder using delta encoding
+// combined with varint compression. It compresses data by storing differences
+// between consecutive values instead of the values themselves.
 type DeltaEncoder struct {
 	minLen          int
 	fallbackEncoder ArrayEncoderDecoder
 }
 
-// NewDeltaEncoder creates and returns a new instance of DeltaEncoder.
+// NewDeltaEncoder creates and returns a new DeltaEncoder. If the input array length
+// is below `minLen`, it falls back to plain encoding.
 func NewDeltaEncoder(minLen int) *DeltaEncoder {
 	return &DeltaEncoder{
 		minLen:          minLen,
@@ -49,18 +69,19 @@ func NewDeltaEncoder(minLen int) *DeltaEncoder {
 	}
 }
 
-// Encode compresses the given array of uint16 values using delta encoding and varint encoding.
-// The first value is stored as-is, while subsequent values are stored as the difference from the previous value.
+// Encode compresses the given array of uint16 values using delta encoding and writes it
+// to the provided writer. If the array length is below `minLen`, it falls back to plain encoding.
 func (d *DeltaEncoder) Encode(values []uint16, writer io.Writer) error {
 	if len(values) <= d.minLen {
-		fmt.Printf("Fallback")
 		return d.fallbackEncoder.Encode(values, writer)
 	}
 
+	// Write the first value directly
 	if err := binary.Write(writer, binary.LittleEndian, values[0]); err != nil {
 		return err
 	}
 
+	// Write subsequent values as deltas
 	prev := values[0]
 	for i := 1; i < len(values); i++ {
 		delta := values[i] - prev
@@ -72,7 +93,8 @@ func (d *DeltaEncoder) Encode(values []uint16, writer io.Writer) error {
 	return nil
 }
 
-// Decode reads a delta-varint encoded array of uint16 values from the reader and reconstructs the original values.
+// Decode reads a delta-encoded array of uint16 values and reconstructs the original array.
+// The first value is read directly, and subsequent values are reconstructed using deltas.
 func (d *DeltaEncoder) Decode(reader io.Reader, length int) ([]uint16, error) {
 	if length == 0 {
 		return []uint16{}, nil
@@ -80,12 +102,12 @@ func (d *DeltaEncoder) Decode(reader io.Reader, length int) ([]uint16, error) {
 
 	values := make([]uint16, length)
 
-	// Read the first value as-is
+	// Read the first value
 	if err := binary.Read(reader, binary.LittleEndian, &values[0]); err != nil {
 		return nil, err
 	}
 
-	// Decode deltas using varint
+	// Decode deltas and reconstruct the array
 	prev := values[0]
 	for i := 1; i < length; i++ {
 		delta, err := readVarint(reader)
@@ -98,7 +120,38 @@ func (d *DeltaEncoder) Decode(reader io.Reader, length int) ([]uint16, error) {
 	return values, nil
 }
 
-// writeVarint writes a uint64 value using varint encoding.
+// PlainEncoder implements ArrayEncoder and ArrayDecoder by writing and reading
+// uint16 values without any compression.
+type PlainEncoder struct{}
+
+// NewPlainEncoder creates and returns a new PlainEncoder.
+func NewPlainEncoder() *PlainEncoder {
+	return &PlainEncoder{}
+}
+
+// Encode writes the given array of uint16 values directly to the writer without compression.
+func (p *PlainEncoder) Encode(values []uint16, writer io.Writer) error {
+	for _, v := range values {
+		if err := binary.Write(writer, binary.LittleEndian, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Decode reads a specified number of uint16 values from the reader and returns them as an array.
+func (p *PlainEncoder) Decode(reader io.Reader, length int) ([]uint16, error) {
+	values := make([]uint16, length)
+	for i := 0; i < length; i++ {
+		if err := binary.Read(reader, binary.LittleEndian, &values[i]); err != nil {
+			return nil, err
+		}
+	}
+	return values, nil
+}
+
+// writeVarint writes a uint64 value using varint encoding. Varint encodes integers
+// into a variable number of bytes, optimizing storage for smaller numbers.
 func writeVarint(writer io.Writer, value uint64) error {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutUvarint(buf, value)
@@ -106,7 +159,8 @@ func writeVarint(writer io.Writer, value uint64) error {
 	return err
 }
 
-// readVarint reads a uint64 value using varint decoding.
+// readVarint reads a uint64 value encoded using varint from the reader. It decodes
+// the variable-length representation back into the original integer value.
 func readVarint(reader io.Reader) (uint64, error) {
 	var value uint64
 	var buf [1]byte
@@ -127,34 +181,4 @@ func readVarint(reader io.Reader) (uint64, error) {
 		}
 	}
 	return value, nil
-}
-
-// PlainEncoder implements ArrayEncoder and ArrayDecoder using plain encoding.
-// Plain encoding writes the values as they are without any compression.
-type PlainEncoder struct{}
-
-// NewPlainEncoder creates and returns a new instance of PlainEncoder.
-func NewPlainEncoder() *PlainEncoder {
-	return &PlainEncoder{}
-}
-
-// Encode writes the given array of uint16 values directly to the writer without any compression.
-func (p *PlainEncoder) Encode(values []uint16, writer io.Writer) error {
-	for _, v := range values {
-		if err := binary.Write(writer, binary.LittleEndian, v); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Decode reads a specified number of uint16 values from the reader and returns them as an array.
-func (p *PlainEncoder) Decode(reader io.Reader, length int) ([]uint16, error) {
-	values := make([]uint16, length)
-	for i := 0; i < length; i++ {
-		if err := binary.Read(reader, binary.LittleEndian, &values[i]); err != nil {
-			return nil, err
-		}
-	}
-	return values, nil
 }

@@ -68,17 +68,24 @@
 //   - DocIDs         : [3000, 3050, 3100, ..., 3500]
 //   - Term Frequencies: [0.1, 0.3, 0.5, ..., 0.7]
 //
-// # Features and TODOs
+// # Features
 //
 // - Optimized posting list storage using Roaring Bitmaps
 // - Efficient traversal of document IDs and term frequencies with block-level iterators
 // - Metadata for blocks (e.g., MinDocID and MaxDocID) to enable efficient block skipping
 // - Serialization and deserialization support for persistence
-// - TODO: Support data integrity checks (e.g., checksums, hashing)
-// - TODO: Explore using Tries or Finite State Transducers (FSTs) for term metadata storage
-// - TODO: Add benchmarks for indexing latency, memory usage, and query performance
-// - TODO: Evaluate use of integer compression for term frequencies
-// - TODO: Consider parallel processing for bulk indexing and queries
+//
+// # TODOs
+//
+// - Add support for data integrity checks (e.g., checksums, hashing).
+// - Explore using Tries or Finite State Transducers (FSTs) for term metadata storage to improve lookup efficiency.
+// - Add benchmarks for indexing latency, memory usage, and query performance.
+// - Evaluate the use of integer compression for term frequencies to reduce storage space.
+// - Support dynamic updates to segments, including deletions and incremental additions.
+// - Improve block skipping strategies for large posting lists to enhance query speed.
+// - Explore using SIMD (Single Instruction, Multiple Data) techniques for accelerating operations on posting lists.
+// - Extend support for storing additional metadata, such as document scores.
+
 package storage
 
 import (

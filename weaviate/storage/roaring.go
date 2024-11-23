@@ -1,25 +1,51 @@
 // Package storage implements a memory-efficient compressed bitmap index using the Roaring Bitmap format.
 // It provides optimized containers for both sparse and dense data sets, supporting fast set operations
-// like unions and intersections. The implementation follows the Roaring Bitmap specification detailed
-// at https://roaringbitmap.org/.
+// such as unions, intersections, and differences. The implementation is designed for high performance
+// and adheres to the Roaring Bitmap specification detailed at https://roaringbitmap.org/.
+//
+// # Overview
+//
+// The storage package leverages two types of containers to optimize storage and computation for sparse and dense data:
+//   - **ArrayContainer**: Used for small and sparse sets of integers, storing values as a sorted array of uint16.
+//   - **BitmapContainer**: Used for dense sets of integers, storing values in a fixed-size bitmap of 64-bit words.
+//
+// The package supports efficient set operations and provides serialization and deserialization for persistence.
+// Use cases include inverted indexes, bitmap-based indexing, and any scenario requiring compact and high-performance
+// set operations on integer data.
+//
+// # Key Features
+//
+// - Supports union and intersection Roaring Bitmaps.
+// - Efficient rank and cardinality queries.
+// - Serialization and deserialization for saving and loading bitmap indexes.
+// - Supports transitioning between Array and Bitmap containers based on cardinality thresholds.
+// - Extensible for custom compression or encoding techniques.
+//
+// # TODOs
+//
+// - Add support for Run-Length Encoding (RLE) containers for further compression.
+// - Introduce versioning for serialization format to ensure backward compatibility.
+// - Explore SIMD (Single Instruction, Multiple Data) operations for accelerating bitmap operations using Go Assembly.
+// - Add support for container-level parallel processing to improve performance on multi-core systems.
+// - Implement bulk add operations for efficiently adding large batches of integers.
+// - Investigate the need for concurrent access support, including thread-safe containers.
+// - Evaluate using Snappy or Zstandard for compressing serialized data.
+// - Replace `fmt.Errorf` with custom error types for better error handling and debugging.
+// - Perform benchmarking and profiling to identify optimization opportunities.
+// - Extend operations to include NOT, XOR, and DIFF to support advanced use cases.
+// - Add checksums or hashes to verify data integrity during serialization and deserialization.
+// - Explore alternative compression mechanisms for containers beyond RLE and delta encoding.
+// - Implement difference (DIFF) operations for managing DELETE document bitmaps efficiently.
+//
+// # Example Use Case
+//
+// Consider a bitmap index storing document IDs for terms in a search engine. Each term is associated with
+// a bitmap, where the presence of a document ID indicates that the term appears in that document.
+// Operations like union, intersection, and difference enable powerful queries, such as:
+//   - Find all documents containing any of a set of terms (union).
+//   - Find all documents containing all of a set of terms (intersection).
+//   - Exclude documents marked as deleted using a difference operation.
 package storage
-
-// TODO: Use Rank method to access terms effeciently
-// TODO: Implement Run-Length Encoding (RLE) container
-// TODO: Implement varint encoding for container metadata
-// TODO: Add versioning support for serialization format
-// TODO: Evaluate implementing SIMD operations for bitmap operations (Go Assembly)
-// TODO: Add container-level parallel prcoessing
-// TODO: Implement bulk Add operation
-// TODO: Do we need support for concurrent access?
-// TODO: Consider using Snappy or Zstandard to comrpess serialized data
-// TODO: Use custom errors instead fmt.Errorf
-// TODO: Benchmarking and Profiling to guide optimizations
-// TODO: Support for more operations like NOT or XOR or DIFF
-// TODO: Add checksums to check for data integrity
-// TODO: Explore other compression mechanisms
-// TODO: Implement Diff inc ase we need to support DELETE operations on documents
-// TODO: Evaluate if caching cardinality makes sense (worse Union/Intersection)
 
 import (
 	"encoding/binary"
@@ -34,6 +60,8 @@ const ContainerConversionThreshold = 4096
 
 // ContainerType identifies the internal container implementation.
 type ContainerType uint8
+
+const DeltaEncodingThreshold = 128
 
 const (
 	ArrayContainerType ContainerType = iota + 1
@@ -68,7 +96,7 @@ func NewArrayContainer() *ArrayContainer {
 	return &ArrayContainer{
 		values:      []uint16{},
 		cardinality: 0,
-		encoder:     encoders.NewPlainEncoder(),
+		encoder:     encoders.NewDeltaEncoder(DeltaEncodingThreshold),
 	}
 }
 
