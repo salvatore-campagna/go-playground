@@ -9,19 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"weaviate/fetcher"
 )
-
-// JsonDocument represents a single entry in the segment JSON
-type JsonDocument struct {
-	Term          string  `json:"term"`
-	DocID         uint32  `json:"doc_id"`
-	TermFrequency float32 `json:"term_frequency"`
-}
-
-// Root represents the top-level structure of the JSON file
-type Root struct {
-	Segments [][]JsonDocument `json:"segments"`
-}
 
 // FetchJson fetches JSON data from either a URL or a local file path.
 func FetchJson(path string) ([]byte, error) {
@@ -51,8 +40,8 @@ func FetchJson(path string) ([]byte, error) {
 }
 
 // ParseJsonSegments parses the JSON data into a slice of segments
-func ParseJsonSegments(data []byte) (Root, error) {
-	var root Root
+func ParseJsonSegments(data []byte) (fetcher.TermPostingRoot, error) {
+	var root fetcher.TermPostingRoot
 	if err := json.Unmarshal(data, &root); err != nil {
 		return root, fmt.Errorf("failed to parse json: %w", err)
 	}
@@ -60,12 +49,12 @@ func ParseJsonSegments(data []byte) (Root, error) {
 }
 
 // CleanSegments removes duplicate document IDs from the segments
-func CleanSegments(root Root) Root {
+func CleanSegments(root fetcher.TermPostingRoot) fetcher.TermPostingRoot {
 	uniqueDocIDs := make(map[uint32]struct{})
-	cleanedSegments := make([][]JsonDocument, len(root.Segments))
+	cleanedSegments := make([][]fetcher.TermPosting, len(root.Segments))
 
 	for i, segment := range root.Segments {
-		uniqueDocs := []JsonDocument{}
+		uniqueDocs := []fetcher.TermPosting{}
 		for _, doc := range segment {
 			if _, exists := uniqueDocIDs[doc.DocID]; !exists {
 				uniqueDocIDs[doc.DocID] = struct{}{}
@@ -75,11 +64,11 @@ func CleanSegments(root Root) Root {
 		cleanedSegments[i] = uniqueDocs
 	}
 
-	return Root{Segments: cleanedSegments}
+	return fetcher.TermPostingRoot{Segments: cleanedSegments}
 }
 
 // WriteJsonToFile writes the cleaned segments to a JSON file
-func WriteJsonToFile(root Root, filename string) error {
+func WriteJsonToFile(root fetcher.TermPostingRoot, filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)

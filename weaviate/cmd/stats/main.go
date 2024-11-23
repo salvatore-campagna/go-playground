@@ -9,19 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"weaviate/fetcher"
 )
-
-// JsonDocument represents a single entry in the segment JSON
-type JsonDocument struct {
-	Term          string  `json:"term"`
-	DocID         uint32  `json:"doc_id"`
-	TermFrequency float32 `json:"term_frequency"`
-}
-
-// Root represents the top-level structure of the JSON file
-type Root struct {
-	Segments [][]JsonDocument `json:"segments"`
-}
 
 // Statistics to hold computed stats
 type Statistics struct {
@@ -63,8 +52,8 @@ func FetchJson(path string) ([]byte, error) {
 }
 
 // ParseJsonSegments parses the JSON data into a slice of segments
-func ParseJsonSegments(data []byte) ([][]JsonDocument, error) {
-	var root Root
+func ParseJsonSegments(data []byte) ([][]fetcher.TermPosting, error) {
+	var root fetcher.TermPostingRoot
 	if err := json.Unmarshal(data, &root); err != nil {
 		return nil, fmt.Errorf("failed to parse json: %w", err)
 	}
@@ -72,7 +61,7 @@ func ParseJsonSegments(data []byte) ([][]JsonDocument, error) {
 }
 
 // ComputeStatistics calculates the required statistics from the segments
-func ComputeStatistics(segments [][]JsonDocument) Statistics {
+func ComputeStatistics(segments [][]fetcher.TermPosting) Statistics {
 	stats := Statistics{
 		TotalSegments:          len(segments),
 		TotalDocuments:         make(map[uint32]struct{}),

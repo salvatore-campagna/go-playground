@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"weaviate/fetcher"
 )
 
 const (
@@ -15,16 +16,6 @@ const (
 	maxDocID              = 1_000_000
 	defaultJsonOutputFile = "output.json"
 )
-
-type JsonDocument struct {
-	Term          string  `json:"term"`
-	DocID         uint32  `json:"doc_id"`
-	TermFrequency float32 `json:"term_frequency"`
-}
-
-type Root struct {
-	Segments [][]JsonDocument `json:"segments"`
-}
 
 var vocabulary = []string{
 	"jedi", "force", "skywalker", "sith", "lightsaber", "empire", "rebellion", "droid",
@@ -37,8 +28,8 @@ var vocabulary = []string{
 }
 
 // generateRandomDocument generates a single document with random values
-func generateRandomDocument(term string, docID uint32) JsonDocument {
-	return JsonDocument{
+func generateRandomDocument(term string, docID uint32) fetcher.TermPosting {
+	return fetcher.TermPosting{
 		Term:          term,
 		DocID:         docID,
 		TermFrequency: rand.Float32(), // Random term frequency between 0.0 and 1.0
@@ -46,8 +37,8 @@ func generateRandomDocument(term string, docID uint32) JsonDocument {
 }
 
 // generateSegment generates a segment containing a list of documents
-func generateSegment(segmentID int) []JsonDocument {
-	segment := []JsonDocument{}
+func generateSegment(segmentID int) []fetcher.TermPosting {
+	segment := []fetcher.TermPosting{}
 	var docID uint32
 
 	for i := 0; i < numDocsPerSegment; i++ {
@@ -61,9 +52,9 @@ func generateSegment(segmentID int) []JsonDocument {
 }
 
 // generateSegments generates a JSON file with multiple segments
-func generateSegments() Root {
-	root := Root{
-		Segments: make([][]JsonDocument, numSegments),
+func generateSegments() fetcher.TermPostingRoot {
+	root := fetcher.TermPostingRoot{
+		Segments: make([][]fetcher.TermPosting, numSegments),
 	}
 
 	for i := 0; i < numSegments; i++ {
@@ -74,7 +65,7 @@ func generateSegments() Root {
 }
 
 // writeJsonToFile writes the generated segments to a JSON file
-func writeJsonToFile(root Root, filename string) error {
+func writeJsonToFile(root fetcher.TermPostingRoot, filename string) error {
 	if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create directories: %w", err)
 	}
