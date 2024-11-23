@@ -19,6 +19,7 @@ package storage
 // TODO: Add checksums to check for data integrity
 // TODO: Explore other compression mechanisms
 // TODO: Implement Diff inc ase we need to support DELETE operations on documents
+// TODO: Evaluate if caching cardinality makes sense (worse Union/Intersection)
 
 import (
 	"encoding/binary"
@@ -441,31 +442,42 @@ func (rb *RoaringBitmap) Contains(value uint32) bool {
 // Union returns a new bitmap containing all values from both bitmaps.
 func (rb *RoaringBitmap) Union(other *RoaringBitmap) *RoaringBitmap {
 	result := NewRoaringBitmap()
+	result.cardinality = 0
+
 	for key, container := range rb.containers {
 		result.containers[key] = container
+		result.cardinality += container.Cardinality()
 	}
 
 	for key, container := range other.containers {
 		if existing, exists := result.containers[key]; exists {
-			result.containers[key] = existing.Union(container)
+			unionContainer := existing.Union(container)
+			result.containers[key] = unionContainer
+			result.cardinality += unionContainer.Cardinality() - existing.Cardinality()
 		} else {
 			result.containers[key] = container
+			result.cardinality += container.Cardinality()
 		}
 	}
+
 	return result
 }
 
 // Intersection returns a new bitmap containing values present in both bitmaps.
 func (rb *RoaringBitmap) Intersection(other *RoaringBitmap) *RoaringBitmap {
 	result := NewRoaringBitmap()
+	result.cardinality = 0
+
 	for key, container := range rb.containers {
 		if otherContainer, exists := other.containers[key]; exists {
-			intersection := container.Intersection(otherContainer)
-			if intersection.Cardinality() > 0 {
-				result.containers[key] = intersection
+			intersectionContainer := container.Intersection(otherContainer)
+			if intersectionContainer.Cardinality() > 0 {
+				result.containers[key] = intersectionContainer
+				result.cardinality += intersectionContainer.Cardinality()
 			}
 		}
 	}
+
 	return result
 }
 

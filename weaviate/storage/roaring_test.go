@@ -458,3 +458,82 @@ func TestRoaringBitmap_Serialization(t *testing.T) {
 		}
 	}
 }
+
+func TestRoaringBitmap_Union(t *testing.T) {
+	rb1 := NewRoaringBitmap()
+	rb2 := NewRoaringBitmap()
+	values := generateRandomUint32Values(1_000)
+
+	expectedCount := 0
+	unionValues := make(map[uint32]bool)
+
+	for value, included := range values {
+		if included {
+			addToRB1 := rand.Intn(2) == 0
+			addToRB2 := rand.Intn(2) == 0
+
+			if addToRB1 {
+				rb1.Add(value)
+				unionValues[value] = true
+			}
+			if addToRB2 {
+				rb2.Add(value)
+				unionValues[value] = true
+			}
+
+			if addToRB1 || addToRB2 {
+				expectedCount++
+			}
+		}
+	}
+
+	union := rb1.Union(rb2)
+	for value := range unionValues {
+		if !union.Contains(value) {
+			t.Errorf("RoaringBitmap union missing value [%d]", value)
+		}
+	}
+
+	if union.Cardinality() != expectedCount {
+		t.Errorf("Expected cardinality %d, got %d", expectedCount, union.Cardinality())
+	}
+}
+
+func TestRoaringBitmap_Intersection(t *testing.T) {
+	rb1 := NewRoaringBitmap()
+	rb2 := NewRoaringBitmap()
+	values := generateRandomUint32Values(1_000)
+
+	expectedCount := 0
+	intersectionValues := make(map[uint32]bool)
+
+	for value, included := range values {
+		if included {
+			addToRB1 := rand.Intn(2) == 0
+			addToRB2 := rand.Intn(2) == 0
+
+			if addToRB1 {
+				rb1.Add(value)
+			}
+			if addToRB2 {
+				rb2.Add(value)
+			}
+
+			if addToRB1 && addToRB2 {
+				intersectionValues[value] = true
+				expectedCount++
+			}
+		}
+	}
+
+	intersection := rb1.Intersection(rb2)
+	for value := range intersectionValues {
+		if !intersection.Contains(value) {
+			t.Errorf("RoaringBitmap intersection missing value [%d]", value)
+		}
+	}
+
+	if intersection.Cardinality() != expectedCount {
+		t.Errorf("Expected cardinality %d, got %d", expectedCount, intersection.Cardinality())
+	}
+}
