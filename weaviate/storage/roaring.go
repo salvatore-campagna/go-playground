@@ -39,7 +39,6 @@ const (
 // Implementations must support basic set operations and serialization.
 type RoaringContainer interface {
 	Add(value uint16)
-	BulkAdd(values []uint16)
 	Contains(value uint16) bool
 	Cardinality() int
 	Union(other RoaringContainer) RoaringContainer
@@ -80,14 +79,6 @@ func (ac *ArrayContainer) Add(value uint16) {
 	copy(ac.values[index+1:], ac.values[index:])
 	ac.values[index] = value
 	ac.cardinality++
-}
-
-// BulkAdd sets the bits corresponding to the values in the bitmap
-func (ac *ArrayContainer) BulkAdd(values []uint16) {
-	// TODO sort each slice and then merge sort?
-	for _, value := range values {
-		ac.Add(value)
-	}
 }
 
 // Contains checks if a value exists in the ArrayContainer using binary search.
@@ -228,21 +219,22 @@ func NewBitmapContainer() *BitmapContainer {
 	}
 }
 
+// Add sets the bit corresponding to the value in the bitmap.
 func (bc *BitmapContainer) Add(value uint16) {
-	word := value / 64
-	bit := value % 64
+	word := int(value / 64) // Calculate the word index
+	bit := uint(value % 64) // Calculate the bit position within the word
 
-	// Directly set the bit in the preallocated bitmap
+	// Dynamically expand the bitmap if the word index exceeds the current capacity
+	if word >= len(bc.Bitmap) {
+		newBitmap := make([]uint64, word+1)
+		copy(newBitmap, bc.Bitmap)
+		bc.Bitmap = newBitmap
+	}
+
+	// Check if the bit is already set, if not, set it and increment the cardinality
 	if (bc.Bitmap[word] & (1 << bit)) == 0 {
 		bc.Bitmap[word] |= (1 << bit)
 		bc.cardinality++
-	}
-}
-
-// BulkAdd sets the bits corresponding to the values in the bitmap
-func (bc *BitmapContainer) BulkAdd(values []uint16) {
-	for _, value := range values {
-		bc.Add(value)
 	}
 }
 
@@ -250,7 +242,6 @@ func (bc *BitmapContainer) BulkAdd(values []uint16) {
 func (bc *BitmapContainer) Contains(value uint16) bool {
 	word := value / 64
 	bit := value % 64
-
 	return (bc.Bitmap[word] & (1 << bit)) != 0
 }
 
@@ -408,9 +399,11 @@ func NewRoaringBitmap() *RoaringBitmap {
 
 // Add inserts a value into the appropriate container, creating a new container if necessary.
 // Automatically converts ArrayContainers to BitmapContainers when they exceed the threshold.
+// Add inserts a value into the appropriate container, creating a new container if necessary.
+// Automatically converts ArrayContainers to BitmapContainers when they exceed the threshold.
 func (rb *RoaringBitmap) Add(value uint32) {
-	key := uint16(value >> 16)
-	low := uint16(value & 0xFFFF)
+	key := uint16(value >> 16)    // Extract the high-order 16 bits
+	low := uint16(value & 0xFFFF) // Extract the low-order 16 bits
 
 	container, exists := rb.containers[key]
 	if !exists {
@@ -426,14 +419,6 @@ func (rb *RoaringBitmap) Add(value uint32) {
 
 	if ac, ok := container.(*ArrayContainer); ok && ac.Cardinality() > ContainerConversionThreshold {
 		rb.containers[key] = ac.ToBitmapContainer()
-	}
-}
-
-// BulkAdd sets the bits corresponding to the values in the bitmap
-func (rb *RoaringBitmap) BulkAdd(values []uint32) {
-	// TODO: group values by the high-order key before adding to reduce lookups in containers map
-	for _, value := range values {
-		rb.Add(value)
 	}
 }
 

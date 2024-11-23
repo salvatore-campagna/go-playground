@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// Constants
-const maxUint16 = 1 << 16
-
-// Helper Functions
+const (
+	maxUint16 = ^uint16(0)
+	maxUint32 = ^uint32(0)
+)
 
 // populateArrayContainer populates an ArrayContainer with the given values.
 func populateArrayContainer(ac *ArrayContainer, values map[uint16]bool) {
@@ -121,6 +121,85 @@ func TestArrayContainer_Cardinality(t *testing.T) {
 	}
 }
 
+func TestArrayContainer_Union(t *testing.T) {
+	bc1 := NewArrayContainer()
+	bc2 := NewArrayContainer()
+	values := generateRandomUint16Values(1_000)
+
+	expectedCount := 0
+	unionValues := make(map[uint16]bool)
+
+	for value, included := range values {
+		if included {
+			addToBC1 := rand.Intn(2) == 0
+			addToBC2 := rand.Intn(2) == 0
+
+			if addToBC1 {
+				bc1.Add(value)
+				unionValues[value] = true
+			}
+			if addToBC2 {
+				bc2.Add(value)
+				unionValues[value] = true
+			}
+
+			if addToBC1 || addToBC2 {
+				expectedCount++
+			}
+		}
+	}
+
+	union := bc1.Union(bc2)
+	for value := range unionValues {
+		if !union.Contains(value) {
+			t.Errorf("BitmapContainer union missing value [%d]", value)
+		}
+	}
+
+	if union.Cardinality() != expectedCount {
+		t.Errorf("Expected cardinality %d, got %d", expectedCount, union.Cardinality())
+	}
+}
+
+func TestArrayContainer_Intersection(t *testing.T) {
+	ac1 := NewArrayContainer()
+	ac2 := NewArrayContainer()
+	values := generateRandomUint16Values(1_000)
+
+	expectedCount := 0
+	intersectingValues := make(map[uint16]bool)
+
+	for value, included := range values {
+		if included {
+			addToAC1 := rand.Intn(2) == 0
+			addToAC2 := rand.Intn(2) == 0
+
+			if addToAC1 {
+				ac1.Add(value)
+			}
+			if addToAC2 {
+				ac2.Add(value)
+			}
+
+			if addToAC1 && addToAC2 {
+				intersectingValues[value] = true
+				expectedCount++
+			}
+		}
+	}
+
+	intersection := ac1.Intersection(ac2)
+	for value, included := range intersectingValues {
+		if included && !intersection.Contains(value) {
+			t.Errorf("ArrayContainer intersection missing value [%d]", value)
+		}
+	}
+
+	if intersection.Cardinality() != expectedCount {
+		t.Errorf("Expected cardinality %d, got %d", expectedCount, intersection.Cardinality())
+	}
+}
+
 // BitmapContainer Tests
 
 func TestBitmapContainer_Add(t *testing.T) {
@@ -181,7 +260,7 @@ func TestBitmapContainer_Rank(t *testing.T) {
 
 	// Validate rank calculation
 	for i := 0; i < 1_000; i++ {
-		value := uint16(rand.Intn(maxUint16))
+		value := uint16(rand.Intn(1 << 16))
 		expectedRank := calculateExpectedRank(bc.Bitmap, value)
 		actualRank := bc.Rank(value)
 		if expectedRank != actualRank {
@@ -190,7 +269,155 @@ func TestBitmapContainer_Rank(t *testing.T) {
 	}
 }
 
+func TestBitmapContainer_Union(t *testing.T) {
+	bc1 := NewBitmapContainer()
+	bc2 := NewBitmapContainer()
+	values := generateRandomUint16Values(1_000)
+
+	expectedCount := 0
+	unionValues := make(map[uint16]bool)
+
+	for value, included := range values {
+		if included {
+			addToBC1 := rand.Intn(2) == 0
+			addToBC2 := rand.Intn(2) == 0
+
+			if addToBC1 {
+				bc1.Add(value)
+				unionValues[value] = true
+			}
+			if addToBC2 {
+				bc2.Add(value)
+				unionValues[value] = true
+			}
+
+			if addToBC1 || addToBC2 {
+				expectedCount++
+			}
+		}
+	}
+
+	union := bc1.Union(bc2)
+	for value := range unionValues {
+		if !union.Contains(value) {
+			t.Errorf("BitmapContainer union missing value [%d]", value)
+		}
+	}
+
+	if union.Cardinality() != expectedCount {
+		t.Errorf("Expected cardinality %d, got %d", expectedCount, union.Cardinality())
+	}
+}
+
+func TestBitmapContainer_Intersection(t *testing.T) {
+	bc1 := NewBitmapContainer()
+	bc2 := NewBitmapContainer()
+	values := generateRandomUint16Values(1_000)
+
+	expectedCount := 0
+	intersectionValues := make(map[uint16]bool)
+
+	for value, included := range values {
+		if included {
+			addToBC1 := rand.Intn(2) == 0
+			addToBC2 := rand.Intn(2) == 0
+
+			if addToBC1 {
+				bc1.Add(value)
+			}
+			if addToBC2 {
+				bc2.Add(value)
+			}
+
+			if addToBC1 && addToBC2 {
+				intersectionValues[value] = true
+				expectedCount++
+			}
+		}
+	}
+
+	intersection := bc1.Intersection(bc2)
+	for value := range intersectionValues {
+		if !intersection.Contains(value) {
+			t.Errorf("BitmapContainer intersection missing value [%d]", value)
+		}
+	}
+
+	if intersection.Cardinality() != expectedCount {
+		t.Errorf("Expected cardinality %d, got %d", expectedCount, intersection.Cardinality())
+	}
+}
+
 // RoaringBitmap Tests
+
+func TestRoaringBitmap_Empty(t *testing.T) {
+	rb := NewRoaringBitmap()
+
+	if rb.Cardinality() != 0 {
+		t.Errorf("Empty bitmap should have cardinality 0, got %d", rb.Cardinality())
+	}
+
+	if rb.Contains(0) {
+		t.Errorf("Empty bitmap should not contain any value, but contains 0")
+	}
+}
+
+func TestRoaringBitmap_BoundaryValues(t *testing.T) {
+	rb := NewRoaringBitmap()
+	values := []uint32{
+		0, uint32(maxUint16) - 1, uint32(maxUint16), uint32(maxUint16) + 1, uint32(maxUint32),
+	}
+
+	for _, value := range values {
+		rb.Add(value)
+	}
+
+	for _, value := range values {
+		if !rb.Contains(value) {
+			t.Errorf("Bitmap should contain %d", value)
+		}
+	}
+
+	if rb.Cardinality() != len(values) {
+		t.Errorf("Expected cardinality %d, got %d", len(values), rb.Cardinality())
+	}
+}
+
+func TestRoaringBitmap_SerializationEmpty(t *testing.T) {
+	original := NewRoaringBitmap()
+
+	var buffer bytes.Buffer
+	if err := original.Serialize(&buffer); err != nil {
+		t.Fatalf("Serialization failed: %v", err)
+	}
+
+	deserialized := NewRoaringBitmap()
+	if err := deserialized.Deserialize(&buffer); err != nil {
+		t.Fatalf("Deserialization failed: %v", err)
+	}
+
+	if deserialized.Cardinality() != 0 {
+		t.Errorf("Deserialized empty bitmap should have cardinality 0, got %d", deserialized.Cardinality())
+	}
+}
+
+func TestRoaringBitmap_ContainerTransition(t *testing.T) {
+	rb := NewRoaringBitmap()
+
+	for i := uint32(0); i < 4097; i++ {
+		rb.Add(i)
+	}
+
+	if rb.Cardinality() != 4097 {
+		t.Errorf("Expected cardinality 4097, got %d", rb.Cardinality())
+	}
+
+	for i := uint32(0); i < 4097; i++ {
+		if !rb.Contains(i) {
+			t.Errorf("Bitmap missing value [%d] after adding", i)
+		}
+	}
+}
 
 func TestRoaringBitmap_Add(t *testing.T) {
 	rb := NewRoaringBitmap()
