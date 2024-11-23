@@ -96,12 +96,12 @@ func TestSegmentSerialization(t *testing.T) {
 func TestSegmentTermLookup(t *testing.T) {
 	segment := NewSegment()
 
-	docs := []fetcher.TermPosting{
+	terms := []fetcher.TermPosting{
 		{Term: "jedi", DocID: 123, TermFrequency: 0.5},
 	}
 
-	if err := segment.BulkIndex(docs); err != nil {
-		t.Fatalf("failed to idnex documents: %v", err)
+	if err := segment.BulkIndex(terms); err != nil {
+		t.Fatalf("failed to index documents: %v", err)
 	}
 
 	termIterator, err := segment.TermIterator("jedi")
@@ -127,7 +127,7 @@ func TestSegmentTermLookup(t *testing.T) {
 
 		docID, err := termIterator.DocID()
 		if err != nil {
-			t.Fatalf("unexpected error while retriving document id for 'jedi': %v", err)
+			t.Fatalf("unexpected error while retrieving document ID for 'jedi': %v", err)
 		}
 		if docID != expectedDocument.DocID {
 			t.Fatalf("unexpected DocID for 'jedi': got %d, expected %d", docID, expectedDocument.DocID)
@@ -135,10 +135,18 @@ func TestSegmentTermLookup(t *testing.T) {
 
 		termFrequency, err := termIterator.TermFrequency()
 		if err != nil {
-			t.Fatalf("unexpected error while retriving term frequency for 'jedi': %v", err)
+			t.Fatalf("unexpected error while retrieving term frequency for 'jedi': %v", err)
 		}
 		if termFrequency != expectedDocument.TermFrequency {
-			t.Fatalf("unexpected term frequency for 'jedi': got %2.f, expected %.2f", termFrequency, expectedDocument.TermFrequency)
+			t.Fatalf("unexpected term frequency for 'jedi': got %.2f, expected %.2f", termFrequency, expectedDocument.TermFrequency)
 		}
+	}
+
+	hasNext, err := termIterator.Next()
+	if err != nil {
+		t.Fatalf("unexpected error when advancing iterator: %v", err)
+	}
+	if hasNext {
+		t.Fatalf("expected iterator to be exhausted, but it still has elements")
 	}
 }

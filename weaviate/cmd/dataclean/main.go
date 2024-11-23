@@ -39,7 +39,7 @@ func FetchJson(path string) ([]byte, error) {
 	return data, nil
 }
 
-// ParseJsonSegments parses the JSON data into a slice of segments
+// ParseJsonSegments parses the JSON data into a slice of segments.
 func ParseJsonSegments(data []byte) (fetcher.TermPostingRoot, error) {
 	var root fetcher.TermPostingRoot
 	if err := json.Unmarshal(data, &root); err != nil {
@@ -48,26 +48,47 @@ func ParseJsonSegments(data []byte) (fetcher.TermPostingRoot, error) {
 	return root, nil
 }
 
-// CleanSegments removes duplicate document IDs from the segments
-func CleanSegments(root fetcher.TermPostingRoot) fetcher.TermPostingRoot {
-	uniqueDocIDs := make(map[uint32]struct{})
+// CleanSegments removes duplicate document IDs for the same term within each segment
+// and reports the total number of duplicates per term and overall.
+func CleanSegments(root fetcher.TermPostingRoot) (fetcher.TermPostingRoot, int) {
 	cleanedSegments := make([][]fetcher.TermPosting, len(root.Segments))
+	totalDuplicates := 0
 
 	for i, segment := range root.Segments {
-		uniqueDocs := []fetcher.TermPosting{}
+		termDocMap := make(map[string]map[uint32]struct{}) // Map to track unique doc IDs per term
+		termDuplicateCounts := make(map[string]int)        // Map to track duplicates per term
+
+		cleanedDocs := []fetcher.TermPosting{}
 		for _, doc := range segment {
-			if _, exists := uniqueDocIDs[doc.DocID]; !exists {
-				uniqueDocIDs[doc.DocID] = struct{}{}
-				uniqueDocs = append(uniqueDocs, doc)
+			// Initialize the term's map if it doesn't exist
+			if _, exists := termDocMap[doc.Term]; !exists {
+				termDocMap[doc.Term] = make(map[uint32]struct{})
+			}
+
+			// Check for duplicates and track them
+			if _, docExists := termDocMap[doc.Term][doc.DocID]; docExists {
+				termDuplicateCounts[doc.Term]++
+				totalDuplicates++
+			} else {
+				termDocMap[doc.Term][doc.DocID] = struct{}{}
+				cleanedDocs = append(cleanedDocs, doc)
 			}
 		}
-		cleanedSegments[i] = uniqueDocs
+
+		// Log duplicate counts for the current segment
+		for term, count := range termDuplicateCounts {
+			if count > 0 {
+				fmt.Printf("Segment %d: Term '%s' had %d duplicate documents removed.\n", i, term, count)
+			}
+		}
+
+		cleanedSegments[i] = cleanedDocs
 	}
 
-	return fetcher.TermPostingRoot{Segments: cleanedSegments}
+	return fetcher.TermPostingRoot{Segments: cleanedSegments}, totalDuplicates
 }
 
-// WriteJsonToFile writes the cleaned segments to a JSON file
+// WriteJsonToFile writes the cleaned segments to a JSON file.
 func WriteJsonToFile(root fetcher.TermPostingRoot, filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -103,7 +124,9 @@ func main() {
 		log.Fatalf("Error parsing JSON: %v", err)
 	}
 
-	cleanedRoot := CleanSegments(root)
+	cleanedRoot, totalDuplicates := CleanSegments(root)
+
+	fmt.Printf("Total duplicate documents removed: %d\n", totalDuplicates)
 
 	if err := WriteJsonToFile(cleanedRoot, *outputFilePath); err != nil {
 		log.Fatalf("Error writing cleaned JSON to file: %v", err)

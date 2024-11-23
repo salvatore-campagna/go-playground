@@ -31,19 +31,19 @@ func main() {
 		return
 	}
 
-	jsonSegments, err := fetcher.ParseTermPostings(data)
+	segmentTermPostings, err := fetcher.ParseTermPostings(data)
 	if err != nil {
 		fmt.Printf("Error parsing JSON: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Processing %d segments\n", len(jsonSegments))
+	fmt.Printf("Processing %d segments\n", len(segmentTermPostings))
 
 	segments := make([]*storage.Segment, 0)
-	for segmentID, jsonDocuments := range jsonSegments {
+	for segmentID, termPostings := range segmentTermPostings {
 		segment := storage.NewSegment()
 		segments = append(segments, segment)
-		segment.BulkIndex(jsonDocuments)
+		segment.BulkIndex(termPostings)
 
 		segmentPath := filepath.Join(*dir, fmt.Sprintf("segment_%d.bin", segmentID))
 		segmentFile, err := os.Create(segmentPath)
@@ -52,6 +52,7 @@ func main() {
 			return
 		}
 
+		//segment.PrintInfo()
 		if err := segment.WriteSegment(segmentFile); err != nil {
 			fmt.Printf("Error writing segment %s: %v\n", segmentPath, err)
 			segmentFile.Close()

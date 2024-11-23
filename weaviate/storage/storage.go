@@ -128,11 +128,12 @@ func (s *Segment) PrintInfo() {
 	fmt.Printf("Segment Information\n\n")
 	fmt.Printf("Magic Number   : 0x%X\n", s.MagicNumber)
 	fmt.Printf("Version        : %d\n", s.Version)
-	fmt.Printf("Toal Docs      : %d\n", s.DocCount)
+	fmt.Printf("Total Docs     : %d\n", s.DocCount)
 	fmt.Printf("Total Terms    : %d\n", len(s.Terms))
 
-	fmt.Printf("\n%-20s | %-12s | %-10s | %-10s | %-10s |\n", "Term", "Documents", "Blocks", "Postings", "Freq Len")
-	fmt.Println(strings.Repeat("-", 75))
+	// Print term-level summary
+	fmt.Printf("\n%-20s | %-12s | %-10s | %-10s |\n", "Term", "Documents", "Blocks", "Postings")
+	fmt.Println(strings.Repeat("-", 60))
 
 	totalDocs := 0
 	totalBlocks := 0
@@ -142,23 +143,44 @@ func (s *Segment) PrintInfo() {
 		termDocs := int(metadata.TotalDocs)
 		termBlocks := len(metadata.Blocks)
 		termPostings := 0
-		termFrequencies := 0
 
 		for _, block := range metadata.Blocks {
 			termPostings += block.Bitmap.Cardinality()
-			termFrequencies += len(block.TermFrequencies)
 		}
 
 		totalDocs += termDocs
 		totalBlocks += termBlocks
 		totalPostings += termPostings
 
-		fmt.Printf("%-20s | %-12d | %-10d | %-10d | %-10d |\n", term, termDocs, termBlocks, termPostings, termFrequencies)
+		fmt.Printf("%-20s | %-12d | %-10d | %-10d |\n", term, termDocs, termBlocks, termPostings)
 	}
 
-	fmt.Println(strings.Repeat("-", 75))
+	fmt.Println(strings.Repeat("-", 60))
 	fmt.Printf("\n%-20s | %-12d | %-10d | %-10d\n", "Overall", totalDocs, totalBlocks, totalPostings)
-	fmt.Printf("\n\n\n")
+
+	// Print block-level summary
+	fmt.Printf("\nDetailed Block Summary\n")
+	fmt.Printf("%-20s | %-8s | %-8s | %-8s | %-8s | %-8s |\n", "Term", "Block", "MinDocID", "MaxDocID", "Cardinality", "FreqLen")
+	fmt.Println(strings.Repeat("-", 75))
+
+	for term, metadata := range s.Terms {
+		termCardinality := 0
+		termFreqLen := 0
+
+		for i, block := range metadata.Blocks {
+			blockCardinality := block.Bitmap.Cardinality()
+			freqLen := len(block.TermFrequencies)
+
+			termCardinality += blockCardinality
+			termFreqLen += freqLen
+
+			fmt.Printf("%-20s | %-8d | %-8d | %-8d | %-8d | %-8d |\n", term, i+1, block.MinDocID, block.MaxDocID, blockCardinality, freqLen)
+		}
+
+		// Print term summary line
+		fmt.Printf("%-20s | %-8s | %-8s | %-8s | %-8d | %-8d |\n", term, "Total", "-", "-", termCardinality, termFreqLen)
+		fmt.Println(strings.Repeat("-", 75))
+	}
 }
 
 // NewSegment initializes a new Segment with the given base document ID.
@@ -177,8 +199,6 @@ func (s *Segment) TotalDocs() uint32 {
 
 // BulkIndex adds a batch of documents to the segment.
 // The documents can contain different terms, and they must be sorted by document ID.
-// BulkIndex adds a batch of documents to the segment.
-// Documents can contain different terms and must be sorted by DocID.
 func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 	if len(documents) == 0 {
 		return nil
@@ -194,7 +214,7 @@ func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 			s.Terms[document.Term] = termMetadata
 		}
 
-		// Get the last block or create a new one
+		// Get the last block or create a new one based on `MaxEntriesPerBlock`
 		var block *Block
 		if len(termMetadata.Blocks) > 0 {
 			block = termMetadata.Blocks[len(termMetadata.Blocks)-1]
@@ -437,12 +457,7 @@ func (s *Segment) TermIterator(term string) (PostingListIterator, error) {
 	if !exists {
 		return &EmptyIterator{}, nil
 	}
-
-	return &TermIterator{
-		blocks:        termMetadata.Blocks,
-		currentBlock:  0,
-		blockIterator: termMetadata.Blocks[0].Bitmap.Iterator(), // if a term exists we have at least one block so it is safe to access Blocks[0]
-	}, nil
+	return NewTermIterator(termMetadata.Blocks, term), nil
 }
 
 func (s *Segment) TermIterators(terms []string) ([]PostingListIterator, error) {

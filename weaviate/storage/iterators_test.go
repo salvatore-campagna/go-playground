@@ -9,7 +9,7 @@ import (
 func TestEmptyRoaringBitmapIterator(t *testing.T) {
 	t.Run("Empty Iterator", func(t *testing.T) {
 		bitmap := NewRoaringBitmap()
-		it := NewRoaringBitmapIterator(bitmap)
+		it := NewRoaringBitmapIterator(bitmap, "test-term")
 
 		hasNext, err := it.Next()
 		if err != nil {
@@ -30,7 +30,7 @@ func TestBitmapIteratorSequential_BelowThreshold(t *testing.T) {
 			bitmap.Add(uint32(i))
 		}
 
-		it := NewRoaringBitmapIterator(bitmap)
+		it := NewRoaringBitmapIterator(bitmap, "test-term")
 		for i := 0; i < 4096; i++ {
 			hasNext, err := it.Next()
 			if err != nil {
@@ -66,7 +66,7 @@ func TestBitmapIteratorSequential_AboveThreshold(t *testing.T) {
 			bitmap.Add(uint32(i))
 		}
 
-		it := NewRoaringBitmapIterator(bitmap)
+		it := NewRoaringBitmapIterator(bitmap, "test-term")
 		for i := 0; i < 8192; i++ {
 			hasNext, err := it.Next()
 			if err != nil {
@@ -109,7 +109,7 @@ func TestBitmapIteratorRandom_MultipleContainers(t *testing.T) {
 		expectedValues = removeDuplicates(expectedValues)
 		sort.Slice(expectedValues, func(i, j int) bool { return expectedValues[i] < expectedValues[j] })
 
-		it := NewRoaringBitmapIterator(bitmap)
+		it := NewRoaringBitmapIterator(bitmap, "test-term")
 		for i := 0; i < len(expectedValues); i++ {
 			hasNext, err := it.Next()
 			if err != nil {
@@ -126,6 +126,43 @@ func TestBitmapIteratorRandom_MultipleContainers(t *testing.T) {
 			}
 			if docID != expectedValues[i] {
 				t.Errorf("Expected DocID %d, but got %d", expectedValues[i], docID)
+			}
+		}
+
+		// Ensure iterator is exhausted
+		hasNext, err := it.Next()
+		if hasNext || err != nil {
+			t.Errorf("Expected iterator to be exhausted, but Next returned: hasNext=%v, err=%v", hasNext, err)
+		}
+	})
+}
+
+func TestBitmapIteratorSparseValues(t *testing.T) {
+	t.Run("Sparse Values Across Containers", func(t *testing.T) {
+		bitmap := NewRoaringBitmap()
+
+		values := []uint32{100, 1000, 5000, 15000, 30000, 50000}
+		for _, value := range values {
+			bitmap.Add(value)
+		}
+
+		it := NewRoaringBitmapIterator(bitmap, "test-term")
+		for i, expected := range values {
+			hasNext, err := it.Next()
+			if err != nil {
+				t.Fatalf("Unexpected error during iteration: %v", err)
+			}
+
+			if !hasNext {
+				t.Fatalf("Iterator terminated prematurely at index %d", i)
+			}
+
+			docID, err := it.DocID()
+			if err != nil {
+				t.Fatalf("Unexpected error retrieving DocID: %v", err)
+			}
+			if docID != expected {
+				t.Errorf("Expected DocID %d, but got %d", expected, docID)
 			}
 		}
 
