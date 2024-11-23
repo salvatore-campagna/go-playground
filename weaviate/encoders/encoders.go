@@ -3,7 +3,7 @@
 // designed for efficient storage and transmission of sequences of numbers, particularly when
 // data exhibits patterns that benefit from compression (e.g., sorted or sequential values).
 //
-// # Encoding Techniques
+// # Features
 //
 //  1. **Delta Encoding**: Stores the difference between consecutive values. This is efficient
 //     for sequences with small or predictable increments. Combined with variable-length encoding

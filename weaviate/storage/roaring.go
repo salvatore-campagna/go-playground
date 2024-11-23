@@ -13,7 +13,7 @@
 // Use cases include inverted indexes, bitmap-based indexing, and any scenario requiring compact and high-performance
 // set operations on integer data.
 //
-// # Key Features
+// # Features
 //
 // - Supports union and intersection Roaring Bitmaps.
 // - Efficient rank and cardinality queries.

@@ -10,7 +10,7 @@
 // and retrieving associated term frequencies. Posting lists are organized into blocks to allow
 // efficient skipping and sequential access.
 //
-// # Key Features
+// # Features
 //
 // - Bitmap Iterators: Supports iteration over Roaring Bitmap containers for document IDs.
 // - Posting List Iterators: Provides traversal over term posting lists, supporting term frequencies.

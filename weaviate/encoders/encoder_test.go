@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// Helper function to generate a slice of random uint16 values
+// generateRandomUint16Values generates a slice of random uint16 values.
 func generateRandomUint16Values(n int) []uint16 {
 	values := make([]uint16, n)
 	for i := 0; i < n; i++ {
@@ -15,32 +15,28 @@ func generateRandomUint16Values(n int) []uint16 {
 	return values
 }
 
-// Helper function to generate a slice of monotonically increasing uint16 values
+// generateMonotonicUint16Values generates a slice of monotonically increasing uint16 values
 // with a random step between stepMin and stepMax.
-func generateMonotonicUint16Values(n int, start uint16, stepMin uint16, stepMax uint16) []uint16 {
+func generateMonotonicUint16Values(n int, start, stepMin, stepMax uint16) []uint16 {
 	values := make([]uint16, n)
-	currentValue := start
-
+	current := start
 	for i := 0; i < n; i++ {
-		values[i] = currentValue
+		values[i] = current
 		step := uint16(rand.Intn(int(stepMax-stepMin+1))) + stepMin
-		currentValue += step
-
-		// Ensure we wrap around if we exceed the max value of uint16
-		if currentValue > 65535 {
-			currentValue = 65535
+		current += step
+		if current > 65535 {
+			current = 65535
 		}
 	}
-
 	return values
 }
 
-// Helper function to check if two slices are equal
+// valuesAreEqual checks if two slices of uint16 are equal.
 func valuesAreEqual(a, b []uint16) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := 0; i < len(a); i++ {
+	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
@@ -48,102 +44,92 @@ func valuesAreEqual(a, b []uint16) bool {
 	return true
 }
 
-// TestDeltaEncoder tests the DeltaEncoder for both encoding and decoding
+// TestDeltaEncoder tests the DeltaEncoder for both encoding and decoding with random values.
 func TestDeltaEncoder_Serialization(t *testing.T) {
-	originalValues := generateRandomUint16Values(100)
+	original := generateRandomUint16Values(100)
 	encoder := NewDeltaEncoder(0)
 
 	var buffer bytes.Buffer
-	if err := encoder.Encode(originalValues, &buffer); err != nil {
-		t.Fatalf("Failed to serialize with DeltaEncoder: %v", err)
+	if err := encoder.Encode(original, &buffer); err != nil {
+		t.Fatalf("DeltaEncoder failed to encode: %v", err)
 	}
 
-	decoder := NewDeltaEncoder(0)
-	decodedValues, err := decoder.Decode(&buffer, len(originalValues))
+	decoded, err := encoder.Decode(&buffer, len(original))
 	if err != nil {
-		t.Fatalf("Failed to deserialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to decode: %v", err)
 	}
 
-	if !valuesAreEqual(originalValues, decodedValues) {
-		t.Fatalf("DeltaEncoder serialization/deserialization failed: original and decoded values do not match.")
+	if !valuesAreEqual(original, decoded) {
+		t.Fatalf("DeltaEncoder failed: original and decoded values do not match")
 	}
 }
 
-// TestPlainEncoder tests the PlainEncoder for both encoding and decoding
+// TestPlainEncoder tests the PlainEncoder for both encoding and decoding with random values.
 func TestPlainEncoder_Serialization(t *testing.T) {
-	originalValues := generateRandomUint16Values(100)
+	original := generateRandomUint16Values(100)
 	encoder := NewPlainEncoder()
 
 	var buffer bytes.Buffer
-	if err := encoder.Encode(originalValues, &buffer); err != nil {
-		t.Fatalf("Failed to serialize with PlainEncoder: %v", err)
+	if err := encoder.Encode(original, &buffer); err != nil {
+		t.Fatalf("PlainEncoder failed to encode: %v", err)
 	}
 
-	decoder := NewPlainEncoder()
-	decodedValues, err := decoder.Decode(&buffer, len(originalValues))
+	decoded, err := encoder.Decode(&buffer, len(original))
 	if err != nil {
-		t.Fatalf("Failed to deserialize with PlainEncoder: %v", err)
+		t.Fatalf("PlainEncoder failed to decode: %v", err)
 	}
 
-	if !valuesAreEqual(originalValues, decodedValues) {
-		t.Fatalf("PlainEncoder serialization/deserialization failed: original and decoded values do not match.")
+	if !valuesAreEqual(original, decoded) {
+		t.Fatalf("PlainEncoder failed: original and decoded values do not match")
 	}
 }
 
-// TestDeltaCompressionEfficiency checks if delta compression results in fewer bytes than plain encoding
+// TestDeltaCompressionEfficiency ensures DeltaEncoder is more efficient than PlainEncoder for monotonic values.
 func TestDeltaCompressionEfficiency(t *testing.T) {
-	values := generateMonotonicUint16Values(1000, 0, 0, 10)
+	values := generateMonotonicUint16Values(5000, 0, 1, 10)
 
-	// Encode with DeltaEncoder
+	var deltaBuffer, plainBuffer bytes.Buffer
 	deltaEncoder := NewDeltaEncoder(0)
-	var deltaBuffer bytes.Buffer
-	if err := deltaEncoder.Encode(values, &deltaBuffer); err != nil {
-		t.Fatalf("Failed to serialize with DeltaEncoder: %v", err)
-	}
-
-	// Encode with PlainEncoder
 	plainEncoder := NewPlainEncoder()
-	var plainBuffer bytes.Buffer
+
+	if err := deltaEncoder.Encode(values, &deltaBuffer); err != nil {
+		t.Fatalf("DeltaEncoder failed to encode: %v", err)
+	}
 	if err := plainEncoder.Encode(values, &plainBuffer); err != nil {
-		t.Fatalf("Failed to serialize with PlainEncoder: %v", err)
+		t.Fatalf("PlainEncoder failed to encode: %v", err)
 	}
 
 	deltaSize := deltaBuffer.Len()
 	plainSize := plainBuffer.Len()
-	diff := plainSize - deltaSize
+	t.Logf("Delta size: %d, Plain size: %d, Difference: %d", deltaSize, plainSize, plainSize-deltaSize)
 
-	t.Logf("Delta Buffer Length: %d, Plain Buffer Length: %d, Difference: %d bytes", deltaSize, plainSize, diff)
-
-	if deltaSize >= plainSize {
-		t.Fatalf("DeltaEncoder should produce fewer or equal number of bytes than PlainEncoder, but got Delta: %d, Plain: %d", deltaSize, plainSize)
+	if deltaSize > plainSize {
+		t.Fatalf("DeltaEncoder should produce fewer bytes than PlainEncoder for monotonic values")
 	}
 }
 
-// TestDeltaCompressionEfficiency checks if delta compression results in fewer bytes than plain encoding
-func TestNoDeltaEncodingBelowMinLen(t *testing.T) {
-	len := 1 + rand.Intn(128)
-	values := generateMonotonicUint16Values(len, 0, 0, 10)
+// TestDeltaEncoder_Fallback ensures DeltaEncoder falls back to PlainEncoder for short arrays.
+func TestDeltaEncoder_Fallback(t *testing.T) {
+	length := rand.Intn(10) + 1
+	values := generateMonotonicUint16Values(length, 0, 1, 5)
 
-	// Encode with DeltaEncoder
-	deltaEncoder := NewDeltaEncoder(len)
-	var deltaBuffer bytes.Buffer
+	deltaEncoder := NewDeltaEncoder(length)
+	var deltaBuffer, plainBuffer bytes.Buffer
+
 	if err := deltaEncoder.Encode(values, &deltaBuffer); err != nil {
-		t.Fatalf("Failed to serialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to encode: %v", err)
 	}
-
-	// Encode with PlainEncoder
 	plainEncoder := NewPlainEncoder()
-	var plainBuffer bytes.Buffer
 	if err := plainEncoder.Encode(values, &plainBuffer); err != nil {
-		t.Fatalf("Failed to serialize with PlainEncoder: %v", err)
+		t.Fatalf("PlainEncoder failed to encode: %v", err)
 	}
 
 	if !bytes.Equal(deltaBuffer.Bytes(), plainBuffer.Bytes()) {
-		t.Fatalf("unexpected delta encoding")
+		t.Fatalf("DeltaEncoder fallback failed: encoded bytes do not match PlainEncoder")
 	}
 }
 
-// TestDeltaEncoder_EqualValues tests delta encoding with a series of equal values
+// TestDeltaEncoder_EqualValues tests DeltaEncoder with identical values.
 func TestDeltaEncoder_EqualValues(t *testing.T) {
 	values := make([]uint16, 100)
 	for i := range values {
@@ -153,45 +139,60 @@ func TestDeltaEncoder_EqualValues(t *testing.T) {
 	encoder := NewDeltaEncoder(0)
 	var buffer bytes.Buffer
 	if err := encoder.Encode(values, &buffer); err != nil {
-		t.Fatalf("Failed to serialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to encode: %v", err)
 	}
 
-	decoder := NewDeltaEncoder(0)
-	decodedValues, err := decoder.Decode(&buffer, len(values))
+	decoded, err := encoder.Decode(&buffer, len(values))
 	if err != nil {
-		t.Fatalf("Failed to deserialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to decode: %v", err)
 	}
 
-	if !valuesAreEqual(values, decodedValues) {
-		t.Fatalf("DeltaEncoder failed with equal values: original and decoded values do not match.")
+	if !valuesAreEqual(values, decoded) {
+		t.Fatalf("DeltaEncoder failed for equal values")
 	}
 }
 
-// TestDeltaEncoder_IncreasingValues tests delta encoding with monotonically increasing values
-func TestDeltaEncoder_IncreasingValues(t *testing.T) {
-	values := make([]uint16, 100)
-	for i := range values {
-		values[i] = uint16(i)
-	}
+// TestDeltaEncoder_MonotonicValues tests DeltaEncoder with monotonically increasing values.
+func TestDeltaEncoder_MonotonicValues(t *testing.T) {
+	values := generateMonotonicUint16Values(100, 0, 1, 10)
 
 	encoder := NewDeltaEncoder(0)
 	var buffer bytes.Buffer
 	if err := encoder.Encode(values, &buffer); err != nil {
-		t.Fatalf("Failed to serialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to encode: %v", err)
 	}
 
-	decoder := NewDeltaEncoder(0)
-	decodedValues, err := decoder.Decode(&buffer, len(values))
+	decoded, err := encoder.Decode(&buffer, len(values))
 	if err != nil {
-		t.Fatalf("Failed to deserialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to decode: %v", err)
 	}
 
-	if !valuesAreEqual(values, decodedValues) {
-		t.Fatalf("DeltaEncoder failed with increasing values: original and decoded values do not match.")
+	if !valuesAreEqual(values, decoded) {
+		t.Fatalf("DeltaEncoder failed for monotonic values")
 	}
 }
 
-// TestDeltaEncoder_DecreasingValues tests delta encoding with monotonically decreasing values
+// TestPlainEncoder_PreserveIntegrity ensures input and output match for PlainEncoder.
+func TestPlainEncoder_PreserveIntegrity(t *testing.T) {
+	values := generateRandomUint16Values(100)
+	encoder := NewPlainEncoder()
+
+	var buffer bytes.Buffer
+	if err := encoder.Encode(values, &buffer); err != nil {
+		t.Fatalf("PlainEncoder failed to encode: %v", err)
+	}
+
+	decoded, err := encoder.Decode(&buffer, len(values))
+	if err != nil {
+		t.Fatalf("PlainEncoder failed to decode: %v", err)
+	}
+
+	if !valuesAreEqual(values, decoded) {
+		t.Fatalf("PlainEncoder integrity check failed: input and output do not match")
+	}
+}
+
+// TestDeltaEncoder_DecreasingValues tests DeltaEncoder with monotonically decreasing values.
 func TestDeltaEncoder_DecreasingValues(t *testing.T) {
 	values := make([]uint16, 100)
 	for i := range values {
@@ -201,37 +202,15 @@ func TestDeltaEncoder_DecreasingValues(t *testing.T) {
 	encoder := NewDeltaEncoder(0)
 	var buffer bytes.Buffer
 	if err := encoder.Encode(values, &buffer); err != nil {
-		t.Fatalf("Failed to serialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to encode: %v", err)
 	}
 
-	decoder := NewDeltaEncoder(0)
-	decodedValues, err := decoder.Decode(&buffer, len(values))
+	decoded, err := encoder.Decode(&buffer, len(values))
 	if err != nil {
-		t.Fatalf("Failed to deserialize with DeltaEncoder: %v", err)
+		t.Fatalf("DeltaEncoder failed to decode: %v", err)
 	}
 
-	if !valuesAreEqual(values, decodedValues) {
-		t.Fatalf("DeltaEncoder failed with decreasing values: original and decoded values do not match.")
-	}
-}
-
-// TestPlainEncoder_PreserveIntegrity checks that input and output are identical for PlainEncoder
-func TestPlainEncoder_PreserveIntegrity(t *testing.T) {
-	values := generateRandomUint16Values(100)
-	encoder := NewPlainEncoder()
-
-	var buffer bytes.Buffer
-	if err := encoder.Encode(values, &buffer); err != nil {
-		t.Fatalf("Failed to serialize with PlainEncoder: %v", err)
-	}
-
-	decoder := NewPlainEncoder()
-	decodedValues, err := decoder.Decode(&buffer, len(values))
-	if err != nil {
-		t.Fatalf("Failed to deserialize with PlainEncoder: %v", err)
-	}
-
-	if !valuesAreEqual(values, decodedValues) {
-		t.Fatalf("PlainEncoder failed to preserve integrity: original and decoded values do not match.")
+	if !valuesAreEqual(values, decoded) {
+		t.Fatalf("DeltaEncoder failed for decreasing values")
 	}
 }
