@@ -181,7 +181,7 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 		}
 	}
 
-	// Prepare results
+	// TODO: maybe use anothe rheap here too?
 	var results []ScoredDocument
 	for docID, score := range scoredDocs {
 		results = append(results, ScoredDocument{
@@ -189,8 +189,6 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 			Score: score,
 		})
 	}
-
-	// Sort results using the provided comparator
 	sort.Slice(results, func(i, j int) bool {
 		return less(results[i], results[j])
 	})

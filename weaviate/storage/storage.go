@@ -103,7 +103,7 @@ const (
 type Segment struct {
 	MagicNumber uint32
 	Version     uint8
-	DocCount    uint32
+	DocIDs      *RoaringBitmap
 	Terms       map[string]*TermMetadata
 }
 
@@ -128,7 +128,7 @@ func (s *Segment) PrintInfo() {
 	fmt.Printf("Segment Information\n\n")
 	fmt.Printf("Magic Number   : 0x%X\n", s.MagicNumber)
 	fmt.Printf("Version        : %d\n", s.Version)
-	fmt.Printf("Total Docs     : %d\n", s.DocCount)
+	fmt.Printf("Total Docs     : %d\n", s.DocIDs.Cardinality())
 	fmt.Printf("Total Terms    : %d\n", len(s.Terms))
 
 	// Print term-level summary
@@ -188,23 +188,28 @@ func NewSegment() *Segment {
 	return &Segment{
 		MagicNumber: magicNumber,
 		Version:     version,
-		DocCount:    0,
+		DocIDs:      NewRoaringBitmap(),
 		Terms:       make(map[string]*TermMetadata),
 	}
 }
 
 func (s *Segment) TotalDocs() uint32 {
-	return s.DocCount
+	return uint32(s.DocIDs.Cardinality())
 }
 
 // BulkIndex adds a batch of documents to the segment.
-// The documents can contain different terms, and they must be sorted by document ID.
 func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 	if len(documents) == 0 {
 		return nil
 	}
 
 	for _, document := range documents {
+		// Add the document ID to the segment-wide bitmap
+		if !s.DocIDs.Contains(document.DocID) {
+			s.DocIDs.Add(document.DocID)
+		}
+
+		// Retrieve or initialize metadata for the term
 		termMetadata, exists := s.Terms[document.Term]
 		if !exists {
 			termMetadata = &TermMetadata{
@@ -214,7 +219,7 @@ func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 			s.Terms[document.Term] = termMetadata
 		}
 
-		// Get the last block or create a new one based on `MaxEntriesPerBlock`
+		// Get the last block or create a new one if the current block is full
 		var block *Block
 		if len(termMetadata.Blocks) > 0 {
 			block = termMetadata.Blocks[len(termMetadata.Blocks)-1]
@@ -229,20 +234,21 @@ func (s *Segment) BulkIndex(documents []fetcher.TermPosting) error {
 			termMetadata.Blocks = append(termMetadata.Blocks, block)
 		}
 
-		// Add the document to the block
-		if err := block.AddDocument(document.DocID, document.TermFrequency); err != nil {
-			return fmt.Errorf("failed to add document to block: %w", err)
+		// Check if the document ID already exists in the block
+		if !block.Bitmap.Contains(document.DocID) {
+			// Add the document to the block
+			if err := block.AddDocument(document.DocID, document.TermFrequency); err != nil {
+				return fmt.Errorf("failed to add document to block: %w", err)
+			}
+
+			// Update block metadata
+			block.MaxDocID = document.DocID
+
+			// Increment TotalDocs for unique DocIDs in the term
+			termMetadata.TotalDocs++
 		}
-
-		// Update block metadata
-		block.MaxDocID = document.DocID
-
-		// Update term metadata
-		termMetadata.TotalDocs++
 	}
 
-	// Update the segment's total document count
-	s.DocCount += uint32(len(documents))
 	return nil
 }
 
@@ -276,8 +282,8 @@ func (s *Segment) Serialize(writer io.Writer) error {
 		return err
 	}
 
-	if err := binary.Write(writer, binary.LittleEndian, s.DocCount); err != nil {
-		return err
+	if err := s.DocIDs.Serialize(writer); err != nil {
+		return fmt.Errorf("failed to serialize DocIDs bitmap: %w", err)
 	}
 
 	numTerms := uint32(len(s.Terms))
@@ -324,9 +330,11 @@ func (s *Segment) Deserialize(reader io.Reader) error {
 	if err := binary.Read(reader, binary.LittleEndian, &s.Version); err != nil {
 		return err
 	}
-	if err := binary.Read(reader, binary.LittleEndian, &s.DocCount); err != nil {
-		return err
+
+	if err := s.DocIDs.Deserialize(reader); err != nil {
+		return fmt.Errorf("failed to deserialize DocIDs bitmap: %w", err)
 	}
+
 	var numTerms uint32
 	if err := binary.Read(reader, binary.LittleEndian, &numTerms); err != nil {
 		return err
