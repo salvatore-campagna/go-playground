@@ -11,10 +11,17 @@ import (
 )
 
 const DefaultSegmentDir = "segment-data"
+const DefaultQuery = "great vector"
 
 func main() {
 	dir := flag.String("dir", DefaultSegmentDir, "Directory to load segment files from")
+	query := flag.String("query", "", "Query terms (space-separated)")
 	flag.Parse()
+
+	effectiveQuery := *query
+	if effectiveQuery == "" {
+		effectiveQuery = DefaultQuery
+	}
 
 	files, err := os.ReadDir(*dir)
 	if err != nil {
@@ -51,10 +58,9 @@ func main() {
 		panic(err)
 	}
 
-	query := getQuery()
-	terms := strings.Fields(query)
+	terms := strings.Fields(effectiveQuery)
 
-	fmt.Printf("Query: %s\n", query)
+	fmt.Printf("Query: %s\n", effectiveQuery)
 	fmt.Printf("Terms: %v\n", terms)
 
 	scoredDocuments, err := queryEngine.MultiTermQuery(terms, func(doc1, doc2 engine.ScoredDocument) bool {
@@ -75,14 +81,6 @@ func loadSegment(path string, segment *storage.Segment) error {
 	}
 	defer file.Close()
 	return segment.Deserialize(file)
-}
-
-func getQuery() string {
-	query, exists := os.LookupEnv("QUERY")
-	if !exists {
-		query = "great vector database"
-	}
-	return query
 }
 
 func printResults(results []engine.ScoredDocument) {

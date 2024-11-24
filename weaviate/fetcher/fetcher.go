@@ -9,21 +9,20 @@ import (
 	"strings"
 )
 
-// TermPosting represents a single entry in the segment JSON
+// TermPosting represents a single entry in the segment JSON.
 type TermPosting struct {
 	Term          string  `json:"term"`
 	DocID         uint32  `json:"doc_id"`
 	TermFrequency float32 `json:"term_frequency"`
 }
 
-// TermPostingRoot represents the top-level structure of the JSON file
+// TermPostingRoot represents the top-level structure of the JSON file.
 type TermPostingRoot struct {
 	Segments [][]TermPosting `json:"segments"`
 }
 
-// FetchJson fetches JSON data from either a URL or a local file path.
+// FetchJson fetches JSON data from a URL or a local file.
 func FetchJson(path string) ([]byte, error) {
-	// Check if the path is a URL (starts with "http" or "https")
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		response, err := http.Get(path)
 		if err != nil {
@@ -42,7 +41,7 @@ func FetchJson(path string) ([]byte, error) {
 		return data, nil
 	}
 
-	// Treat it as a local file path
+	// Treat the path as a local file.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read local file: %w", err)
@@ -50,7 +49,7 @@ func FetchJson(path string) ([]byte, error) {
 	return data, nil
 }
 
-// ParseTermPostings parses the JSON data into a slice of segments
+// ParseTermPostings parses JSON data into a slice of term posting segments.
 func ParseTermPostings(data []byte) ([][]TermPosting, error) {
 	var root TermPostingRoot
 	if err := json.Unmarshal(data, &root); err != nil {

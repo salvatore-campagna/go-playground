@@ -1,21 +1,5 @@
-// Package storage provides data structures and iterators for efficient storage and traversal
-// of posting lists and term frequencies using Roaring Bitmaps. This package is designed to
-// enable high-performance queries and data retrieval for search engines or inverted index
-// implementations.
-//
-// # Overview
-//
-// This package enables efficient access to term-document and DocIDs using posting list iterators
-// and Roaring Bitmap-based compression. It includes iterators optimized for traversing document IDs
-// and retrieving associated term frequencies. Posting lists are organized into blocks to allow
-// efficient skipping and sequential access.
-//
-// # Features
-//
-// - Bitmap Iterators: Supports iteration over Roaring Bitmap containers for document IDs.
-// - Posting List Iterators: Provides traversal over term posting lists, supporting term frequencies.
-// - Block-Level Access: Enables block-by-block iteration for efficient term-document operations.
-//
+package storage
+
 // # TODOs
 //
 //   - Add support for filtering documents during iteration.
@@ -24,7 +8,6 @@
 //   - Introduce custom error types for iterator-related errors.
 //   - Validate term frequency consistency during iteration.
 //   - Add checksums to ensure data consistency during iteration and storage.
-package storage
 
 import (
 	"fmt"

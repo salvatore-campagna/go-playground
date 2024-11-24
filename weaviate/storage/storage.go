@@ -1,80 +1,5 @@
-// Package storage implements an inverted index segment for full-text search.
-// It provides efficient storage and retrieval of term-document relationships
-// using compressed posting lists and Roaring Bitmaps. The implementation
-// supports serialization for persistence and includes optimizations for
-// memory usage and query performance, enabling scalable search functionality.
-//
-// # File Format
-//
-// The segment file is organized into three main sections: the file header, the terms section, and the blocks section.
-//
-// ## File Header
-// The file header provides metadata for the segment file:
-//   - Magic Number (4 bytes): Identifies the segment file format (e.g., 0x007E8B11)
-//   - Version (1 byte): Current segment format version (1)
-//   - Document Count (4 bytes): Total number of documents in the segment
-//   - Number of Terms (4 bytes): Total number of unique terms in the segment
-//
-// ## Terms Section
-// Each term in the segment has metadata and associated posting list blocks:
-//   - Term Length (2 bytes): Length of the term string
-//   - Term String (variable): UTF-8 encoded term
-//   - Total Documents (4 bytes): Number of documents containing this term
-//   - Number of Blocks (4 bytes): Number of blocks associated with the term
-//
-// ## Blocks Section
-// Each block represents a chunk of the posting list for a term. Blocks include the following:
-//   - Min DocID (4 bytes): Minimum document ID in the block
-//   - Max DocID (4 bytes): Maximum document ID in the block
-//   - Bitmap Container Type (1 byte): Type of Roaring Bitmap container (1 = ArrayContainer, 2 = BitmapContainer)
-//   - Compressed DocID Storage: Roaring Bitmap representing document IDs
-//   - Number of Term Frequencies (4 bytes): Number of term frequencies stored in the block
-//   - Term Frequencies ([]float32): Term frequencies for each document in the block
-//
-// ## Example Layout
-//
-// The following example illustrates a segment file with two terms and their associated blocks:
-//
-// Magic Number        : 0x007E8B11
-// Version             : 1
-// Document Count      : 2500
-// Number of Terms     : 2
-//
-// **[Term 1: "database"]**
-//   - Term Length       : 8
-//   - Total Documents   : 2000
-//   - Number of Blocks  : 2
-//   - **Block 1**
-//   - Min DocID      : 1
-//   - Max DocID      : 1000
-//   - Bitmap Type    : ArrayContainer
-//   - DocIDs         : [1, 50, 200, ..., 1000]
-//   - Term Frequencies: [0.5, 0.6, 0.7, ..., 0.8]
-//   - **Block 2**
-//   - Min DocID      : 1001
-//   - Max DocID      : 2000
-//   - Bitmap Type    : BitmapContainer
-//   - DocIDs         : [1001, 1050, 1100, ..., 2000]
-//   - Term Frequencies: [0.2, 0.4, 0.6, ..., 0.9]
-//
-// **[Term 2: "vector"]**
-//   - Term Length       : 6
-//   - Total Documents   : 500
-//   - Number of Blocks  : 1
-//   - **Block 1**
-//   - Min DocID      : 3000
-//   - Max DocID      : 3500
-//   - Bitmap Type    : BitmapContainer
-//   - DocIDs         : [3000, 3050, 3100, ..., 3500]
-//   - Term Frequencies: [0.1, 0.3, 0.5, ..., 0.7]
-//
-// # Features
-//
-// - Optimized posting list storage using Roaring Bitmaps
-// - Efficient traversal of document IDs and term frequencies with block-level iterators
-// - Metadata for blocks (e.g., MinDocID and MaxDocID) to enable efficient block skipping
-// - Serialization and deserialization support for persistence
-//
+package storage
+
 // # TODOs
 //
 // - Add support for data integrity checks (e.g., checksums, hashing).
@@ -85,8 +10,6 @@
 // - Improve block skipping strategies for large posting lists to enhance query speed.
 // - Explore using SIMD (Single Instruction, Multiple Data) techniques for accelerating operations on posting lists.
 // - Extend support for storing additional metadata, such as document scores.
-
-package storage
 
 import (
 	"encoding/binary"
@@ -124,7 +47,7 @@ type TermMetadata struct {
 // term frequencies. Uses RoaringBitmap for efficient docID storage.
 type Block struct {
 	MinDocID        uint32         // Minimum DocID in the block
-	MaxDocID        uint32         // Maximun DocID in the block
+	MaxDocID        uint32         // Maximun DocID in the block (not used, consider removing)
 	Bitmap          *RoaringBitmap // Compressed document ID storage
 	TermFrequencies []float32      // Term frequencies for each document
 }

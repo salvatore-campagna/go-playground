@@ -1,21 +1,17 @@
 .DEFAULT_GOAL := help
 
-.PHONY: all build clean dataclean datagen stats index query test fmt vet help
+.PHONY: all build clean index query test fmt vet help download archive doc
 
 BIN_DIR := bin
 CREATE_INDEX := $(BIN_DIR)/index
 QUERY_INDEX := $(BIN_DIR)/query
-DATA_GEN := $(BIN_DIR)/datagen
-STATS := $(BIN_DIR)/stats
-DATA_CLEAN := $(BIN_DIR)/dataclean
 
 JSON_FILE := segments.json
 SEGMENT_DIR := segment-data
-STATS_FILE := stats.txt
-DATA_CLEAN_INPUT_FILE := data/segments.json
-DATA_CLEAN_OUTPUT_FILE := segments.json
+DATA_URL := https://storage.googleapis.com/weaviate-tech-challenges/db-engineer/segments.json
+ARCHIVE_NAME := project.zip
 
-build: $(CREATE_INDEX) $(QUERY_INDEX) $(DATA_GEN) $(STATS) $(DATA_CLEAN) test
+build: $(CREATE_INDEX) $(QUERY_INDEX) test
 
 $(CREATE_INDEX): clean cmd/index/main.go
 	@mkdir -p $(BIN_DIR)
@@ -25,23 +21,20 @@ $(QUERY_INDEX): clean cmd/query/main.go
 	@mkdir -p $(BIN_DIR)
 	go build -o $(QUERY_INDEX) cmd/query/main.go
 
-$(DATA_GEN): clean cmd/datagen/main.go
-	@mkdir -p $(BIN_DIR)
-	go build -o $(DATA_GEN) cmd/datagen/main.go
-
-$(STATS): clean cmd/stats/main.go
-	@mkdir -p $(BIN_DIR)
-	go build -o $(STATS) cmd/stats/main.go
-
-$(DATA_CLEAN): clean cmd/dataclean/main.go
-	@mkdir -p $(BIN_DIR)
-	go build -o $(DATA_CLEAN) cmd/dataclean/main.go
-
 test: vet
 	go test ./...
 
 test-verbose:
 	go test -v ./...
+
+test-storage:
+	go test ./storage
+
+test-fetcher:
+	go test ./fetcher
+
+test-engine:
+	go test ./engine
 
 fmt:
 	go fmt ./...
@@ -52,41 +45,47 @@ vet: fmt
 delete:
 	rm -rf $(SEGMENT_DIR)
 
-index: $(CREATE_INDEX)
+index: $(CREATE_INDEX) clean-segments
 	./$(CREATE_INDEX) -path $(JSON_FILE) -dir $(SEGMENT_DIR)
 
 query: $(QUERY_INDEX)
-	./$(QUERY_INDEX) -dir $(SEGMENT_DIR)
+	./$(QUERY_INDEX) -dir $(SEGMENT_DIR) -query "$(QUERY)"
 
-datagen: $(DATA_GEN)
-	./$(DATA_GEN) -path $(JSON_FILE)
+download:
+	@echo "Downloading data from $(DATA_URL) to $(JSON_FILE)..."
+	curl -XGET -o $(JSON_FILE) "$(DATA_URL)"
+	@echo "Download completed. Data saved to $(JSON_FILE)."
 
-stats: $(STATS)
-	./$(STATS) -path $(JSON_FILE) > $(STATS_FILE)
+archive:
+	@echo "Creating archive: $(ARCHIVE_NAME)"
+	bash scripts/archive.sh
+	@echo "Archive created successfully: $(ARCHIVE_NAME)"
 
-dataclean: $(DATA_CLEAN)
-	./$(DATA_CLEAN) -input $(DATA_CLEAN_INPUT_FILE) -output $(DATA_CLEAN_OUTPUT_FILE)
+doc:
+	@echo "Starting Go documentation server..."
+	godoc -http=:6060 &
+	sleep 10
+	@echo "Opening Go documentation in browser..."
+	xdg-open http://localhost:6060 >/dev/null 2>&1 || open http://localhost:6060 || echo "Please open http://localhost:6060 in your browser."
 
 clean:
 	rm -rf $(BIN_DIR)
 
+clean-segments:
+	rm -rf $(SEGMENT_DIR)
+
 help:
 	@echo "Makefile for building and running executables"
 	@echo "Usage:"
-	@echo "  make build                - Build all executables"
-	@echo "  make index                - Run the index executable"
-	@echo "  make query                - Run the query executable"
-	@echo "  make datagen              - Run the datagen executable"
-	@echo "  make dataclean            - Run the dataclean executable"
-	@echo "  make stats                - Run the stats executable"
-	@echo "  make clean                - Remove all built files"
-	@echo "  make test                 - Run tests"
-	@echo "  make fmt                  - Format Go code"
-	@echo "  make vet                  - Run go vet"
-	@echo ""
-	@echo "Optional parameters (set using 'make param=value'):"
-	@echo "  JSON_FILE                 - Path to the data generation input file (default: segments_clean.json)"
-	@echo "  SEGMENT_DIR               - Directory for segment data (default: segment-data)"
-	@echo "  STATS_FILE                - Path to the statistics output file (default: stats_output.txt)"
-	@echo "  DATA_CLEAN_INPUT_FILE     - Path to the data clean input file (default: segments.json)"
-	@echo "  DATA_CLEAN_OUTPUT_FILE    - Path to the data clean output file (default: segments_clean.json)"
+	@echo "  make build                 - Build all executables"
+	@echo "  make index                 - Run the index executable"
+	@echo "                               Example: ./$(CREATE_INDEX) -path $(JSON_FILE) -dir $(SEGMENT_DIR)"
+	@echo "  make query [QUERY=<terms>] - Run the query executable with optional terms"
+	@echo "                               Example (custom query): make query QUERY='great database'"
+	@echo "  make download              - Download data from the provided URL"
+	@echo "  make archive               - Create a zip archive of the project"
+	@echo "  make doc                   - Start the Go documentation server and open it in a browser"
+	@echo "  make clean                 - Remove all built files"
+	@echo "  make test                  - Run tests"
+	@echo "  make fmt                   - Format Go code"
+	@echo "  make vet                   - Run go vet"

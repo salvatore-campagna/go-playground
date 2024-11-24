@@ -1,26 +1,5 @@
-// Package storage implements a memory-efficient compressed bitmap index using the Roaring Bitmap format.
-// It provides optimized containers for both sparse and dense data sets, supporting fast set operations
-// such as unions, intersections, and differences. The implementation is designed for high performance
-// and adheres to the Roaring Bitmap specification detailed at https://roaringbitmap.org/.
-//
-// # Overview
-//
-// The storage package leverages two types of containers to optimize storage and computation for sparse and dense data:
-//   - **ArrayContainer**: Used for small and sparse sets of integers, storing values as a sorted array of uint16.
-//   - **BitmapContainer**: Used for dense sets of integers, storing values in a fixed-size bitmap of 64-bit words.
-//
-// The package supports efficient set operations and provides serialization and deserialization for persistence.
-// Use cases include inverted indexes, bitmap-based indexing, and any scenario requiring compact and high-performance
-// set operations on integer data.
-//
-// # Features
-//
-// - Supports union and intersection Roaring Bitmaps.
-// - Efficient rank and cardinality queries.
-// - Serialization and deserialization for saving and loading bitmap indexes.
-// - Supports transitioning between Array and Bitmap containers based on cardinality thresholds.
-// - Extensible for custom compression or encoding techniques.
-//
+package storage
+
 // # TODOs
 //
 // - Add support for Run-Length Encoding (RLE) containers for further compression.
@@ -36,16 +15,6 @@
 // - Add checksums or hashes to verify data integrity during serialization and deserialization.
 // - Explore alternative compression mechanisms for containers beyond RLE and delta encoding.
 // - Implement difference (DIFF) operations for managing DELETE document bitmaps efficiently.
-//
-// # Example Use Case
-//
-// Consider a bitmap index storing document IDs for terms in a search engine. Each term is associated with
-// a bitmap, where the presence of a document ID indicates that the term appears in that document.
-// Operations like union, intersection, and difference enable powerful queries, such as:
-//   - Find all documents containing any of a set of terms (union).
-//   - Find all documents containing all of a set of terms (intersection).
-//   - Exclude documents marked as deleted using a difference operation.
-package storage
 
 import (
 	"encoding/binary"
