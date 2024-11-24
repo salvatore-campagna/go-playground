@@ -38,44 +38,44 @@ func TestSingleTermQuery(t *testing.T) {
 		t.Fatalf("Failed to initialize QueryEngine: %v", err)
 	}
 
-	results, err := queryEngine.MultiTermQuery([]string{"anakin"}, func(d1, d2 ScoredDocument) bool {
+	documentScores, err := queryEngine.MultiTermQuery([]string{"anakin"}, func(d1, d2 ScoredDocument) bool {
 		return d1.Score > d2.Score
 	})
 	if err != nil {
 		t.Fatalf("Failed to execute query: %v", err)
 	}
 
-	expectedDocCount := 3
-	if len(results) != expectedDocCount {
-		t.Fatalf("Expected %d results, got %d", expectedDocCount, len(results))
+	expectedDocumentScores := 3
+	if len(documentScores) != expectedDocumentScores {
+		t.Fatalf("Expected %d results, got %d", expectedDocumentScores, len(documentScores))
 	}
 
-	for i := 1; i < len(results); i++ {
-		if results[i-1].Score < results[i].Score {
+	for i := 1; i < len(documentScores); i++ {
+		if documentScores[i-1].Score < documentScores[i].Score {
 			t.Fatalf("Results are not sorted by score")
 		}
 	}
 }
 
 func TestMultiTermQuery(t *testing.T) {
-	tfJedi := float32(2.0)
-	tfSith := float32(3.0)
-	postings := []fetcher.TermPosting{
+	jediTermFrequency := float32(2.0)
+	sithTermFrequency := float32(3.0)
+	termPostings := []fetcher.TermPosting{
 		{Term: "jedi", DocID: 1, TermFrequency: 1.0},
-		{Term: "jedi", DocID: 2, TermFrequency: tfJedi},
-		{Term: "sith", DocID: 2, TermFrequency: tfSith},
+		{Term: "jedi", DocID: 2, TermFrequency: jediTermFrequency},
+		{Term: "sith", DocID: 2, TermFrequency: sithTermFrequency},
 		{Term: "sith", DocID: 3, TermFrequency: 0.5},
 	}
 
-	segment := createMockSegment(postings)
-	totalDocs := countUniqueDocs(postings)
+	segment := createMockSegment(termPostings)
+	totalDocs := countUniqueDocs(termPostings)
 
 	queryEngine, err := NewQueryEngine([]*storage.Segment{segment}, totalDocs)
 	if err != nil {
 		t.Fatalf("Failed to initialize QueryEngine: %v", err)
 	}
 
-	results, err := queryEngine.MultiTermQuery([]string{"jedi", "sith"}, func(d1, d2 ScoredDocument) bool {
+	documentScores, err := queryEngine.MultiTermQuery([]string{"jedi", "sith"}, func(d1, d2 ScoredDocument) bool {
 		return d1.Score > d2.Score
 	})
 	if err != nil {
@@ -83,24 +83,24 @@ func TestMultiTermQuery(t *testing.T) {
 	}
 
 	// Only DocID 2 matches both terms
-	expectedDocCount := 1
-	if len(results) != expectedDocCount {
-		t.Fatalf("Expected %d results, got %d", expectedDocCount, len(results))
+	expectedDocumentScores := 1
+	if len(documentScores) != expectedDocumentScores {
+		t.Fatalf("Expected %d results, got %d", expectedDocumentScores, len(documentScores))
 	}
 
 	expectedDocID := uint32(2)
-	if results[0].DocID != expectedDocID {
-		t.Errorf("Expected DocID %d, got %d", expectedDocID, results[0].DocID)
+	if documentScores[0].DocID != expectedDocID {
+		t.Errorf("Expected DocID %d, got %d", expectedDocID, documentScores[0].DocID)
 	}
 
-	dfJedi := 2
-	dfSith := 2
-	idfJedi := math.Log(float64(totalDocs+1) / float64(dfJedi+1))
-	idfSith := math.Log(float64(totalDocs+1) / float64(dfSith+1))
-	expectedScore := float64(tfJedi)*float64(idfJedi) + float64(tfSith)*float64(idfSith)
+	jediDocumentFrequency := 2
+	sithDocumentFrequency := 2
+	jediIDF := math.Log(float64(totalDocs+1) / float64(jediDocumentFrequency+1))
+	sithIDF := math.Log(float64(totalDocs+1) / float64(sithDocumentFrequency+1))
+	expectedScore := float64(jediTermFrequency)*float64(jediIDF) + float64(sithTermFrequency)*float64(sithIDF)
 
-	if math.Abs(results[0].Score-expectedScore) > 1e-2 {
-		t.Errorf("Expected score %.2f, got %.2f", expectedScore, results[0].Score)
+	if math.Abs(documentScores[0].Score-expectedScore) > 1e-2 {
+		t.Errorf("Expected score %.2f, got %.2f", expectedScore, documentScores[0].Score)
 	}
 }
 
@@ -112,7 +112,6 @@ func TestEmptyQueryEngine(t *testing.T) {
 	}
 }
 
-// TestMultiSegmentQuery tests the QueryEngine with multiple segments.
 func TestMultiSegmentQuery(t *testing.T) {
 	postings1 := []fetcher.TermPosting{
 		{Term: "rebels", DocID: 1, TermFrequency: 1.0},
@@ -222,7 +221,6 @@ func TestMultiSegmentQueryWithResults(t *testing.T) {
 
 	segment1 := createMockSegment(postings1)
 	segment2 := createMockSegment(postings2)
-
 	totalDocs := countUniqueDocs(append(postings1, postings2...))
 
 	queryEngine, err := NewQueryEngine([]*storage.Segment{segment1, segment2}, totalDocs)
@@ -255,7 +253,6 @@ func TestMultiSegmentQueryWithResults(t *testing.T) {
 	}
 }
 
-// TestScoringFunction tests the QueryEngine's scoring function.
 func TestScoringFunction(t *testing.T) {
 	const (
 		skywalkerRebelsTermFreq = 7.2  // "skywalker" term frequency in rebels document (DocID = 2)
@@ -293,11 +290,13 @@ func TestScoringFunction(t *testing.T) {
 		t.Fatalf("Expected 1 result, got %d", len(results))
 	}
 
-	expectedScore := skywalkerRebelsTermFreq*math.Log(float64(totalDocs+1)/float64(2+1)) +
-		vaderEmpireTermFreq*math.Log(float64(totalDocs+1)/float64(2+1))
+	skywalkerDocumnetFrequency := 2
+	vaderDocumentFrequency := 2
+	expectedScore := skywalkerRebelsTermFreq*math.Log(float64(totalDocs+1)/float64(skywalkerDocumnetFrequency+1)) +
+		vaderEmpireTermFreq*math.Log(float64(totalDocs+1)/float64(vaderDocumentFrequency+1))
 
 	if results[0].DocID != uint32(expectedDocID) {
-		t.Errorf("Expected DocID %d (Luke), got %d", uint32(expectedDocID), results[0].DocID)
+		t.Errorf("Expected DocID %d, got %d", uint32(expectedDocID), results[0].DocID)
 	}
 
 	if math.Abs(results[0].Score-expectedScore) > 1e-2 {
