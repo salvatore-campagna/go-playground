@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: all build clean index query test fmt vet help download archive doc
+.PHONY: all build clean index query test test-verbose test-storage test-fetcher test-engine fmt vet help download archive doc
 
 BIN_DIR := bin
 CREATE_INDEX := $(BIN_DIR)/index
@@ -42,10 +42,7 @@ fmt:
 vet: fmt
 	go vet ./...
 
-delete:
-	rm -rf $(SEGMENT_DIR)
-
-index: $(CREATE_INDEX) clean-segments
+index: $(CREATE_INDEX) delete-segments
 	./$(CREATE_INDEX) -path $(JSON_FILE) -dir $(SEGMENT_DIR)
 
 query: $(QUERY_INDEX)
@@ -71,8 +68,13 @@ doc:
 clean:
 	rm -rf $(BIN_DIR)
 
-clean-segments:
+delete-segments:
 	rm -rf $(SEGMENT_DIR)
+
+run-all: build
+	make download
+	make index
+	make query
 
 help:
 	@echo "Makefile for building and running executables"
@@ -86,6 +88,12 @@ help:
 	@echo "  make archive               - Create a zip archive of the project"
 	@echo "  make doc                   - Start the Go documentation server and open it in a browser"
 	@echo "  make clean                 - Remove all built files"
-	@echo "  make test                  - Run tests"
+	@echo "  make delete-segments       - Remove the segment directory"
+	@echo "  make test                  - Run all tests"
+	@echo "  make test-verbose          - Run all tests with verbose output"
+	@echo "  make test-storage          - Run tests for the storage package"
+	@echo "  make test-fetcher          - Run tests for the fetcher package"
+	@echo "  make test-engine           - Run tests for the engine package"
 	@echo "  make fmt                   - Format Go code"
 	@echo "  make vet                   - Run go vet"
+	@echo "  make run-all               - Downloads dataset and run indexing and querying"

@@ -53,10 +53,7 @@ type ArrayContainer struct {
 	cardinality int
 }
 
-// TODO: smarter encoder configuration
-// TODO: chose a better value for `minLen` 128 for the delta encoder below
 // NewArrayContainer creates an empty ArrayContainer.
-// Array containers are delta encoded (they store sorted integers)
 func NewArrayContainer() *ArrayContainer {
 	return &ArrayContainer{
 		values:      []uint16{},

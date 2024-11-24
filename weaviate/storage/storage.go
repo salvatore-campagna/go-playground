@@ -328,7 +328,7 @@ func (b *Block) Serialize(writer io.Writer) error {
 	}
 	for _, freq := range b.TermFrequencies {
 		if err := binary.Write(writer, binary.LittleEndian, freq); err != nil {
-			return fmt.Errorf("failed to write term frequency delta: %w", err)
+			return fmt.Errorf("failed to write term frequency: %w", err)
 		}
 	}
 	return nil
@@ -354,7 +354,7 @@ func (b *Block) Deserialize(reader io.Reader) error {
 	for i := uint32(0); i < numFreqs; i++ {
 		var freq float32
 		if err := binary.Read(reader, binary.LittleEndian, &freq); err != nil {
-			return fmt.Errorf("failed to read term frequency delta: %w", err)
+			return fmt.Errorf("failed to read term frequency: %w", err)
 		}
 		b.TermFrequencies[i] = freq
 	}
