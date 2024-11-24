@@ -155,9 +155,9 @@ func TestSegmentTotalDocsTracking(t *testing.T) {
 
 func TestBlockOverflowHandling(t *testing.T) {
 	segment := NewSegment()
-	termPostings := make([]fetcher.TermPosting, MaxDcoumentsPerBlock+1)
+	termPostings := make([]fetcher.TermPosting, maxDcoumentsPerBlock+1)
 
-	for i := 0; i <= MaxDcoumentsPerBlock; i++ {
+	for i := 0; i <= maxDcoumentsPerBlock; i++ {
 		termPostings[i] = fetcher.TermPosting{Term: "overflow", DocID: uint32(i + 1), TermFrequency: 1.0}
 	}
 
@@ -170,8 +170,8 @@ func TestBlockOverflowHandling(t *testing.T) {
 		t.Errorf("Expected 2 blocks, got %d", len(termMetadata.Blocks))
 	}
 
-	if termMetadata.Blocks[0].Bitmap.Cardinality() != MaxDcoumentsPerBlock {
-		t.Errorf("Expected first block to have %d entries, got %d", MaxDcoumentsPerBlock, termMetadata.Blocks[0].Bitmap.Cardinality())
+	if termMetadata.Blocks[0].Bitmap.Cardinality() != maxDcoumentsPerBlock {
+		t.Errorf("Expected first block to have %d entries, got %d", maxDcoumentsPerBlock, termMetadata.Blocks[0].Bitmap.Cardinality())
 	}
 
 	if termMetadata.Blocks[1].Bitmap.Cardinality() != 1 {

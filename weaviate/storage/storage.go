@@ -5,11 +5,11 @@ package storage
 // - Add support for data integrity checks (e.g., checksums, hashing).
 // - Explore using Tries or Finite State Transducers (FSTs) for term metadata storage to improve lookup efficiency.
 // - Add benchmarks for indexing latency, memory usage, and query performance.
-// - Evaluate the use of integer compression for term frequencies to reduce storage space.
-// - Support dynamic updates to segments, including deletions and incremental additions.
+// - Evaluate the use of (integer) compression for term frequencies to reduce storage space.
+// - Evaluate the use of quantized compression for term frequencies to reduce storage space.
 // - Improve block skipping strategies for large posting lists to enhance query speed.
 // - Explore using SIMD (Single Instruction, Multiple Data) techniques for accelerating operations on posting lists.
-// - Extend support for storing additional metadata, such as document scores.
+// - Extend support for storing additional metadata to improve query efficiency.
 
 import (
 	"encoding/binary"
@@ -19,11 +19,10 @@ import (
 	"weaviate/fetcher"
 )
 
-// Constants for segment format versioning
 const (
 	magicNumber          = 0x007E8B11
 	version              = 1
-	MaxDcoumentsPerBlock = 16 * 1024
+	maxDcoumentsPerBlock = 16 * 1024
 )
 
 // Segment represents a collection of terms and their posting lists.
@@ -36,20 +35,20 @@ type Segment struct {
 	Terms       map[string]*TermMetadata
 }
 
-// TermMetadata holds statistical and structural data for a specific term
-// in the segment, including document frequencies and posting blocks.
+// TermMetadata holds data for a specific term in the segment, including
+// document frequencies and posting blocks.
 type TermMetadata struct {
-	TotalDocs uint32   // Total number of documents containing this term
-	Blocks    []*Block // Ordered blocks of posting list data
+	TotalDocs uint32   // Total number of documents containing this term (Document Frequency)
+	Blocks    []*Block // Blocks of posting list and term frequencies
 }
 
 // Block represents a compressed set of document IDs and their corresponding
 // term frequencies. Uses RoaringBitmap for efficient docID storage.
 type Block struct {
 	MinDocID        uint32         // Minimum DocID in the block
-	MaxDocID        uint32         // Maximun DocID in the block (not used, consider removing)
+	MaxDocID        uint32         // Maximun DocID in the block (not used)
 	Bitmap          *RoaringBitmap // Compressed document ID storage
-	TermFrequencies []float32      // Term frequencies for each document
+	TermFrequencies []float32      // Term frequencies for each document (not compressed :-( )
 }
 
 // PrintInfo prints out detailed information about the Segment.
@@ -60,7 +59,6 @@ func (s *Segment) PrintInfo() {
 	fmt.Printf("Total Docs     : %d\n", s.DocIDs.Cardinality())
 	fmt.Printf("Total Terms    : %d\n", len(s.Terms))
 
-	// Term-level summary
 	fmt.Printf("\n%-25s | %-15s | %-12s | %-12s |\n", "Term", "Documents", "Blocks", "Postings")
 	fmt.Println(strings.Repeat("-", 70))
 
@@ -87,7 +85,6 @@ func (s *Segment) PrintInfo() {
 	fmt.Println(strings.Repeat("-", 70))
 	fmt.Printf("\n%-25s | %-15d | %-12d | %-12d\n", "Overall", totalDocs, totalBlocks, totalPostings)
 
-	// Block-level summary
 	fmt.Printf("\nDetailed Block Summary\n")
 	fmt.Printf("%-25s | %-8s | %-10s | %-10s | %-12s | %-12s |\n", "Term", "Block", "MinDocID", "MaxDocID", "Cardinality", "FreqLen")
 	fmt.Println(strings.Repeat("-", 94))
@@ -112,12 +109,12 @@ func (s *Segment) PrintInfo() {
 	}
 }
 
-// NewSegment initializes a new Segment with the given base document ID.
+// NewSegment initializes a new Segment with an empty Roaring Bitmap and empty term metadata.
 func NewSegment() *Segment {
 	return &Segment{
 		MagicNumber: magicNumber,
 		Version:     version,
-		DocIDs:      NewRoaringBitmap(),
+		DocIDs:      NewRoaringBitmap(), // Use a Roaring Bitmap to track DocIDs in this segment
 		Terms:       make(map[string]*TermMetadata),
 	}
 }
@@ -127,7 +124,7 @@ func (s *Segment) TotalDocs() uint32 {
 	return uint32(s.DocIDs.Cardinality())
 }
 
-// BulkIndex adds a batch of terms to the segment.
+// BulkIndex adds a batch of term postings to the segment.
 func (s *Segment) BulkIndex(termPostings []fetcher.TermPosting) error {
 	if len(termPostings) == 0 {
 		return nil
@@ -147,12 +144,12 @@ func (s *Segment) BulkIndex(termPostings []fetcher.TermPosting) error {
 			s.Terms[termPosting.Term] = termMetadata
 		}
 
-		// Get the last block or create a new one if the current block is full
+		// Get the last block or create a new one if the current block is full (more than maxDcoumentsPerBlock)
 		var block *Block
 		if len(termMetadata.Blocks) > 0 {
 			block = termMetadata.Blocks[len(termMetadata.Blocks)-1]
 		}
-		if block == nil || block.Bitmap.Cardinality() >= MaxDcoumentsPerBlock {
+		if block == nil || block.Bitmap.Cardinality() >= maxDcoumentsPerBlock {
 			block = &Block{
 				MinDocID:        termPosting.DocID,
 				MaxDocID:        termPosting.DocID,
@@ -165,7 +162,7 @@ func (s *Segment) BulkIndex(termPostings []fetcher.TermPosting) error {
 		// Add the document to the block (if does not already exist)
 		if !block.Bitmap.Contains(termPosting.DocID) {
 			if err := block.AddTermPosting(termPosting.DocID, termPosting.TermFrequency); err != nil {
-				return fmt.Errorf("failed to add document to block: %w", err)
+				return fmt.Errorf("failed to add term posting to block: %w", err)
 			}
 			termMetadata.TotalDocs++
 		}
@@ -199,6 +196,8 @@ func (b *Block) AddTermPosting(docID uint32, termFrequency float32) error {
 	}
 
 	b.TermFrequencies = append(b.TermFrequencies, termFrequency)
+
+	// Sanity check
 	if b.Bitmap.Cardinality() != len(b.TermFrequencies) {
 		return fmt.Errorf("mismatch between bitmap cardinality and term frequencies")
 	}
@@ -207,7 +206,6 @@ func (b *Block) AddTermPosting(docID uint32, termFrequency float32) error {
 
 // Segment.Serialize writes the segment to the provided writer.
 func (s *Segment) Serialize(writer io.Writer) error {
-
 	if err := binary.Write(writer, binary.LittleEndian, s.MagicNumber); err != nil {
 		return err
 	}
@@ -217,10 +215,12 @@ func (s *Segment) Serialize(writer io.Writer) error {
 	if err := s.DocIDs.Serialize(writer); err != nil {
 		return fmt.Errorf("failed to serialize DocIDs bitmap: %w", err)
 	}
+
 	numTerms := uint32(len(s.Terms))
 	if err := binary.Write(writer, binary.LittleEndian, numTerms); err != nil {
 		return err
 	}
+
 	for term, metadata := range s.Terms {
 		termLen := uint16(len(term))
 		if err := binary.Write(writer, binary.LittleEndian, termLen); err != nil {
@@ -256,6 +256,7 @@ func (s *Segment) Deserialize(reader io.Reader) error {
 	if err := s.DocIDs.Deserialize(reader); err != nil {
 		return fmt.Errorf("failed to deserialize DocIDs bitmap: %w", err)
 	}
+
 	var numTerms uint32
 	if err := binary.Read(reader, binary.LittleEndian, &numTerms); err != nil {
 		return err
@@ -298,12 +299,11 @@ func (s *Segment) Deserialize(reader io.Reader) error {
 		s.Terms[term] = termMeta
 	}
 
-	// Ensure there are no extra bytes
-	var extraByte byte
-	err := binary.Read(reader, binary.LittleEndian, &extraByte)
-	if err == nil {
-		return fmt.Errorf("unexpected extra byte: %w", err)
+	// Ensure there are no extra bytes (be careful with backward/forward compatibility)
+	if _, err := reader.Read(make([]byte, 1)); err != io.EOF {
+		return fmt.Errorf("unexpected extra bytes after deserialization: %w", err)
 	}
+
 	return nil
 }
 
