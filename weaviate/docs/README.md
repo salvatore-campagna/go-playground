@@ -1,6 +1,7 @@
 # Weaviate Search Engine Coding Challenge
 
 Author: Salvatore Campagna (Elasticsearch Storage Engine)
+
 Email: salvatorecampagna@gmail.com  
 
 ---
@@ -24,7 +25,7 @@ The challenge was to implement a search engine that:
 
 1. **Storage Layer (`storage`)**:
    - Implements the core of the **inverted index**, storing terms and their associated documents.
-   - Uses **Roaring Bitmaps** for efficient document ID storage and iteration (inspired by the [Roaring Bitmaps paper](https://arxiv.org/pdf/1402.6407)).
+   - Uses **Roaring Bitmaps** for efficient document ID storage and iteration (inspired by the paper [Better bitmap performance with Roaring bitmaps](https://arxiv.org/pdf/1402.6407)).
    - Supports serialization and deserialization for persistence.
    - Includes configurable block size (via `MaxEntriesPerBlock`) to control how terms and posting lists are grouped into `Block`s.
 
@@ -33,11 +34,11 @@ The challenge was to implement a search engine that:
    - Scores documents using **TF-IDF** to rank results based on relevance.
    - Implements block-level iterators and a min-heap for efficient processing.
 
-3. **Testing Suite**:
-   - Comprehensive unit tests ensure correctness of the scoring function, multi-segment queries, roaring bitmaps, and (some) edge cases.
-
 4. **Fetcher (`fetcher`)**:
    - Reads and parses a JSON file with the format provided by the [Weaviate challenge dataset](https://storage.googleapis.com/weaviate-tech-challenges/db-engineer/segments.json).
+
+4. **Testing Suite**:
+   - Comprehensive unit tests ensure correctness of the scoring function, multi-segment queries and roaring bitmaps, including edge cases.
 
 5. **Command Line Utilities**:
    - Utilities to work with the index and query components. These are located in the `cmd` directory and can be executed via `make`. Key utilities include:
@@ -103,8 +104,8 @@ bin/query -dir=custom_segment_data -query="great database"
 
 #### **Example Output**
 ```plaintext
-Query: skywalker vader
-Terms: [skywalker vader]
+Query: "great vector"
+Terms: ["great", "vector"]
 
 Scored documents: 3
 ----------------------
@@ -152,6 +153,13 @@ Scored documents: 3
 - Ensure results are ranked and sorted based on scores.
 
 #### **Algorithm Highlights**:
+
+- **Coordinated traversal**:
+  - Efficiently processes multiple iterators to find documents matching multiple terms and ranking them.
+  - Each iterator processes a sorted list of document IDs (associated to a term and term frequency).
+  - At any given time a min-heap is used to maintain the smalled `DocID` across all iterators.
+  - If a document has all query terms the **TF-IDF** score is computed.
+  - Only relevant documents are processed, while non-relevant ones are skipped
 - **Min-Heap for Block Processing**:
   - Efficiently processes blocks by maintaining a priority queue of terms and their current positions, including DocID and term frequency.
 - **TF-IDF Scoring**:
@@ -164,7 +172,60 @@ Scored documents: 3
 
 ---
 
-## **5. Results**
+### **5. Example Query Execution**
+
+#### Query: `["rebels", "hope"]`
+
+#### Blocks
+
+- **Block 1**: `(term: "rebels", DocID: 1, tf: 1.0)`, `(term: "hope", DocID: 2, tf: 0.5)`
+- **Block 2**: `(term: "empire", DocID: 1, tf: 1.0)`, `(term: "rebels", DocID: 2, tf: 0.7)`
+- **Block 3**: `(term: "empire", DocID: 2, tf: 1.5)`, `(term: "hope", DocID: 3, tf: 1.2)`
+
+---
+
+#### Iterators and Heap at Each Step
+
+##### Step 1
+
+- `(term: "rebels", DocID: 1, tf: 1.0)`, `...`, `nil`
+- `(term: "empire", DocID: 1, tf: 1.0)`, `...`, `nil`
+- `(term: "empire", DocID: 2, tf: 1.5)`, `...`, `nil`
+
+No match, discard `DocID:1`, as document with `DocID: 1` has terms "rebels" and "empire".
+
+##### Step 2
+
+- `(term: "hope",   DocID: 2, tf: 0.5)`, `nil`
+- `(term: "rebels", DocID: 2, tf: 0.7)`, `nil`
+- `(term: "empire", DocID: 2, tf: 1.5)`, `...`
+
+Document with `DocID: 2` matches both "hope" and "rebels", as a result it is a match.
+
+##### Score calculation
+
+`DocID: 2` matches both "rebels" and "hope", the **TF-IDF** score is caldulated for document with `DocID: 2`.
+
+- `DF(term: "rebels"): 2` (Documents `1` and `2`)
+- `DF(term: "hope"): 2` (Documents `2` and `3`)
+- `TF(term: "rebels", DocID: 2): 0.7`
+- `DF(term: "rebels", DocID: 2): 0.5`
+- `TF-IDF(term: "rebels", DocID: 2): 0.09`
+- `TF-IDF(term: "hope", DocID: 2): 0.06`
+
+The result is a score for document `DocID: 2` of `0.5`.
+
+##### Step 3
+
+Continues with no results.
+
+---
+
+#### Final Notes
+- **Iterators**: One for each block, all managed in the heap.
+- **Matching Documents**: Only `DocID: 2` matched all terms.
+
+## **6. Results**
 
 The implementation fulfills all the requirements:
 1. Efficient term-based indexing with Roaring Bitmaps and a custom binary file format.
@@ -173,7 +234,7 @@ The implementation fulfills all the requirements:
 
 ---
 
-## **6. Next Steps**
+## **7. Next Steps**
 
 1. **Performance Optimization**:
    - Parallelize query processing across multiple cores for faster execution.
@@ -185,5 +246,3 @@ The implementation fulfills all the requirements:
 ---
 
 See **TODOs** in the code for more details.
-
-**NOTE:** This project incorporates concepts from my Roaring Bitmaps side project to learn Go, augmented with additional features to fulfill the challenge requirements.

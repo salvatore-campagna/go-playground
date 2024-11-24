@@ -4,7 +4,6 @@ package engine
 //
 // - Implement new queries.
 // - Modularize query execution.
-// - Extract doc counts from segments.
 
 import (
 	"container/heap"
