@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math/bits"
 	"math/rand"
+	"sort"
 	"testing"
 )
 
@@ -59,8 +60,8 @@ func generateRandomUint32Values(max int) map[uint32]bool {
 	return values
 }
 
-// calculateExpectedRank calculates the expected rank for a BitmapContainer.
-func calculateExpectedRank(bitmap []uint64, value uint16) int {
+// calculateExpectedBitmapRank calculates the expected rank for a BitmapContainer.
+func calculateExpectedBitmapRank(bitmap []uint64, value uint16) int {
 	rank := 0
 	for wordIndex := 0; wordIndex <= int(value/64); wordIndex++ {
 		word := bitmap[wordIndex]
@@ -73,33 +74,25 @@ func calculateExpectedRank(bitmap []uint64, value uint16) int {
 	return rank
 }
 
-// ArrayContainer Tests
-
-func TestArrayContainer_Add(t *testing.T) {
-	ac := NewArrayContainer()
-	values := generateRandomUint16Values(10_000)
-
-	populateArrayContainer(ac, values)
-
-	for value, included := range values {
-		if included && !ac.Contains(value) {
-			t.Errorf("ArrayContainer missing value [%d] after adding", value)
-		}
-	}
+// calculateExpectedArrayRank calculates the expected rank for an ArrayContainer.
+func calculateExpectedArrayRank(values []uint16, value uint16) int {
+	return sort.Search(len(values), func(i int) bool { return values[i] > value })
 }
 
-func TestArrayContainer_Contains(t *testing.T) {
+// ArrayContainer Tests
+
+func TestArrayContainer_AddContaines(t *testing.T) {
 	ac := NewArrayContainer()
 	values := generateRandomUint16Values(10_000)
 
 	populateArrayContainer(ac, values)
 
 	for value, included := range values {
-		if included && !ac.Contains(value) {
-			t.Errorf("ArrayContainer does not contain expected value [%d]", value)
-		}
 		if !included && ac.Contains(value) {
-			t.Errorf("ArrayContainer incorrectly contains value [%d]", value)
+			t.Errorf("Array container includes unexpected value %d", value)
+		}
+		if included && !ac.Contains(value) {
+			t.Errorf("Array container missing value %d", value)
 		}
 	}
 }
@@ -118,6 +111,25 @@ func TestArrayContainer_Cardinality(t *testing.T) {
 
 	if ac.Cardinality() != expectedCount {
 		t.Errorf("Expected cardinality %d, got %d", expectedCount, ac.Cardinality())
+	}
+}
+
+func TestArrayContainer_Rank(t *testing.T) {
+	ac := NewArrayContainer()
+
+	for i := uint16(0); i < uint16(2*1024); i++ {
+		if i%2 == 0 {
+			ac.Add(i)
+		}
+	}
+
+	for i := 0; i < 1_000; i++ {
+		value := uint16(rand.Intn(1 << 16))
+		expectedRank := calculateExpectedArrayRank(ac.values, value)
+		actualRank := ac.Rank(value)
+		if expectedRank != actualRank {
+			t.Errorf("Array container rank(%d) = %d, expected %d", value, actualRank, expectedRank)
+		}
 	}
 }
 
@@ -152,7 +164,7 @@ func TestArrayContainer_Union(t *testing.T) {
 	union := bc1.Union(bc2)
 	for value := range unionValues {
 		if !union.Contains(value) {
-			t.Errorf("BitmapContainer union missing value [%d]", value)
+			t.Errorf("BitmapContainer union missing value %d", value)
 		}
 	}
 
@@ -191,7 +203,7 @@ func TestArrayContainer_Intersection(t *testing.T) {
 	intersection := ac1.Intersection(ac2)
 	for value, included := range intersectingValues {
 		if included && !intersection.Contains(value) {
-			t.Errorf("ArrayContainer intersection missing value [%d]", value)
+			t.Errorf("Array container intersection missing value %d", value)
 		}
 	}
 
@@ -202,7 +214,7 @@ func TestArrayContainer_Intersection(t *testing.T) {
 
 // BitmapContainer Tests
 
-func TestBitmapContainer_Add(t *testing.T) {
+func TestBitmapContainer_AddContains(t *testing.T) {
 	bc := NewBitmapContainer()
 	values := generateRandomUint16Values(10_000)
 
@@ -210,23 +222,10 @@ func TestBitmapContainer_Add(t *testing.T) {
 
 	for value, included := range values {
 		if included && !bc.Contains(value) {
-			t.Errorf("BitmapContainer missing value [%d] after adding", value)
-		}
-	}
-}
-
-func TestBitmapContainer_Contains(t *testing.T) {
-	bc := NewBitmapContainer()
-	values := generateRandomUint16Values(10_000)
-
-	populateBitmapContainer(bc, values)
-
-	for value, included := range values {
-		if included && !bc.Contains(value) {
-			t.Errorf("BitmapContainer does not contain expected value [%d]", value)
+			t.Errorf("Bitmap container does not contain expected value %d", value)
 		}
 		if !included && bc.Contains(value) {
-			t.Errorf("BitmapContainer incorrectly contains value [%d]", value)
+			t.Errorf("Bitmap container incorrectly contains value %d", value)
 		}
 	}
 }
@@ -251,20 +250,18 @@ func TestBitmapContainer_Cardinality(t *testing.T) {
 func TestBitmapContainer_Rank(t *testing.T) {
 	bc := NewBitmapContainer()
 
-	// Add alternating bits
 	for i := uint16(0); i < uint16(16*1024-1); i++ {
 		if i%2 == 0 {
 			bc.Add(i)
 		}
 	}
 
-	// Validate rank calculation
 	for i := 0; i < 1_000; i++ {
 		value := uint16(rand.Intn(1 << 16))
-		expectedRank := calculateExpectedRank(bc.Bitmap, value)
+		expectedRank := calculateExpectedBitmapRank(bc.Bitmap, value)
 		actualRank := bc.Rank(value)
 		if expectedRank != actualRank {
-			t.Errorf("BitmapContainer.Rank(%d) = %d; expected %d", value, actualRank, expectedRank)
+			t.Errorf("Bitmap container rank(%d) = %d, expected %d", value, actualRank, expectedRank)
 		}
 	}
 }
@@ -300,7 +297,7 @@ func TestBitmapContainer_Union(t *testing.T) {
 	union := bc1.Union(bc2)
 	for value := range unionValues {
 		if !union.Contains(value) {
-			t.Errorf("BitmapContainer union missing value [%d]", value)
+			t.Errorf("Bitmap container union missing value %d", value)
 		}
 	}
 
@@ -339,7 +336,7 @@ func TestBitmapContainer_Intersection(t *testing.T) {
 	intersection := bc1.Intersection(bc2)
 	for value := range intersectionValues {
 		if !intersection.Contains(value) {
-			t.Errorf("BitmapContainer intersection missing value [%d]", value)
+			t.Errorf("Bitmap container intersection missing value %d", value)
 		}
 	}
 
@@ -414,7 +411,7 @@ func TestRoaringBitmap_ContainerTransition(t *testing.T) {
 
 	for i := uint32(0); i < 4097; i++ {
 		if !rb.Contains(i) {
-			t.Errorf("Bitmap missing value [%d] after adding", i)
+			t.Errorf("Bitmap missing value %d", i)
 		}
 	}
 }
@@ -427,7 +424,7 @@ func TestRoaringBitmap_Add(t *testing.T) {
 
 	for value, included := range values {
 		if included && !rb.Contains(value) {
-			t.Errorf("RoaringBitmap missing value [%d] after adding", value)
+			t.Errorf("Roaring bitmap missing value %d", value)
 		}
 	}
 }
@@ -454,7 +451,7 @@ func TestRoaringBitmap_Serialization(t *testing.T) {
 
 	for value, included := range values {
 		if included && !deserializedRB.Contains(value) {
-			t.Errorf("Deserialized bitmap missing value [%d]", value)
+			t.Errorf("Deserialized bitmap missing value %d", value)
 		}
 	}
 }
@@ -490,7 +487,7 @@ func TestRoaringBitmap_Union(t *testing.T) {
 	union := rb1.Union(rb2)
 	for value := range unionValues {
 		if !union.Contains(value) {
-			t.Errorf("RoaringBitmap union missing value [%d]", value)
+			t.Errorf("Roaring bitmap union missing value %d", value)
 		}
 	}
 
@@ -529,7 +526,7 @@ func TestRoaringBitmap_Intersection(t *testing.T) {
 	intersection := rb1.Intersection(rb2)
 	for value := range intersectionValues {
 		if !intersection.Contains(value) {
-			t.Errorf("RoaringBitmap intersection missing value [%d]", value)
+			t.Errorf("Roaring bitmap intersection missing value %d", value)
 		}
 	}
 
