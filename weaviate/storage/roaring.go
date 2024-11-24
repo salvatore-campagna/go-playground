@@ -7,14 +7,16 @@ package storage
 // - Explore SIMD (Single Instruction, Multiple Data) operations for accelerating bitmap operations using Go Assembly.
 // - Add support for container-level parallel processing to improve performance on multi-core systems.
 // - Implement bulk add operations for efficiently adding large batches of integers.
-// - Investigate the need for concurrent access support, including thread-safe containers.
-// - Evaluate using Snappy or Zstandard for compressing serialized data.
 // - Replace `fmt.Errorf` with custom error types for better error handling and debugging.
 // - Perform benchmarking and profiling to identify optimization opportunities.
 // - Extend operations to include NOT, XOR, and DIFF to support advanced use cases.
 // - Add checksums or hashes to verify data integrity during serialization and deserialization.
 // - Explore alternative compression mechanisms for containers beyond RLE and delta encoding.
 // - Implement difference (DIFF) operations for managing DELETE document bitmaps efficiently.
+// - Explore usage of delta encoding (with bit packing) for array containes.
+// - Consider using a more efficient sorted data structure (e.g., Binary Search Tree or Skip List)
+//   to replace array containers for better insertion and search performance (especially in case the
+//   ContainerConversionThreshold is increased).
 
 import (
 	"encoding/binary"
@@ -35,7 +37,7 @@ const (
 )
 
 // RoaringContainer defines the interface for bitmap storage containers.
-// Implementations must support basic set operations and serialization.
+// Implementations must support basic set operations, cardinality and serialization.
 type RoaringContainer interface {
 	Add(value uint16)
 	Contains(value uint16) bool
@@ -47,7 +49,7 @@ type RoaringContainer interface {
 }
 
 // ArrayContainer implements RoaringContainer using a sorted array,
-// optimized for sparse data sets (cardinality < 4096).
+// optimized for sparse data sets (cardinality < ContainerConversionThreshold).
 type ArrayContainer struct {
 	values      []uint16
 	cardinality int
@@ -64,7 +66,9 @@ func NewArrayContainer() *ArrayContainer {
 // Add inserts a value into the ArrayContainer maintaining sort order.
 // If the value already exists, the container remains unchanged.
 func (ac *ArrayContainer) Add(value uint16) {
-	// TODO Insertion with shifting is inefficient
+	// NOTE: While insertion with shifting is O(n) and not optimal for large arrays,
+	// the ArrayContainer is designed with a fixed maximum size, making this trade-off
+	// acceptable for its intended use case.
 	index := sort.Search(len(ac.values), func(i int) bool { return ac.values[i] >= value })
 	if index < len(ac.values) && ac.values[index] == value {
 		return
@@ -146,11 +150,13 @@ func (ac *ArrayContainer) Union(other RoaringContainer) RoaringContainer {
 			}
 		}
 
+		// Include what is left from the first container
 		for i < len(ac.values) {
 			result.Add(ac.values[i])
 			i++
 		}
 
+		// Include what is left from the second container
 		for j < len(other.values) {
 			result.Add(other.values[j])
 			j++
@@ -208,24 +214,16 @@ type BitmapContainer struct {
 // NewBitmapContainer creates a fixed-size BitmapContainer to handle all possible uint16 values.
 func NewBitmapContainer() *BitmapContainer {
 	return &BitmapContainer{
-		Bitmap:      make([]uint64, 1024), // Preallocate for 65536 bits (1024 * 64 bits)
+		Bitmap:      make([]uint64, 1024), // Preallocate for 65536 bits (1024 * 64 bits = 8K).
 		cardinality: 0,
 	}
 }
 
 // Add sets the bit corresponding to the value in the bitmap.
 func (bc *BitmapContainer) Add(value uint16) {
-	word := int(value / 64) // Calculate the word index
-	bit := uint(value % 64) // Calculate the bit position within the word
+	word := int(value / 64)
+	bit := uint(value % 64)
 
-	// Dynamically expand the bitmap if the word index exceeds the current capacity
-	if word >= len(bc.Bitmap) {
-		newBitmap := make([]uint64, word+1)
-		copy(newBitmap, bc.Bitmap)
-		bc.Bitmap = newBitmap
-	}
-
-	// Check if the bit is already set, if not, set it and increment the cardinality
 	if (bc.Bitmap[word] & (1 << bit)) == 0 {
 		bc.Bitmap[word] |= (1 << bit)
 		bc.cardinality++
@@ -256,7 +254,6 @@ func (bc *BitmapContainer) Serialize(writer io.Writer) error {
 			return fmt.Errorf("error while serializing bitmap container: %v", err)
 		}
 	}
-
 	if err := binary.Write(writer, binary.LittleEndian, uint32(bc.cardinality)); err != nil {
 		return fmt.Errorf("error while serializing bitmap container cardinality: %v", err)
 	}
@@ -271,7 +268,6 @@ func (bc *BitmapContainer) Deserialize(reader io.Reader) error {
 	}
 
 	bc.Bitmap = make([]uint64, length)
-
 	for i := 0; i < int(length); i++ {
 		if err := binary.Read(reader, binary.LittleEndian, &bc.Bitmap[i]); err != nil {
 			return fmt.Errorf("error while deserializing bitmap container: %v", err)
@@ -355,7 +351,6 @@ func (bc *BitmapContainer) Rank(value uint16) int {
 
 	mask := (uint64(1) << (bitPosition + 1)) - 1
 	rank += bits.OnesCount64(bc.Bitmap[wordIndex] & mask)
-
 	return rank
 }
 
@@ -393,11 +388,9 @@ func NewRoaringBitmap() *RoaringBitmap {
 
 // Add inserts a value into the appropriate container, creating a new container if necessary.
 // Automatically converts ArrayContainers to BitmapContainers when they exceed the threshold.
-// Add inserts a value into the appropriate container, creating a new container if necessary.
-// Automatically converts ArrayContainers to BitmapContainers when they exceed the threshold.
 func (rb *RoaringBitmap) Add(value uint32) {
-	key := uint16(value >> 16)    // Extract the high-order 16 bits
-	low := uint16(value & 0xFFFF) // Extract the low-order 16 bits
+	key := uint16(value >> 16)
+	low := uint16(value & 0xFFFF)
 
 	container, exists := rb.containers[key]
 	if !exists {
@@ -552,33 +545,6 @@ func (rb *RoaringBitmap) Deserialize(reader io.Reader) error {
 	}
 
 	return nil
-}
-
-// TODO: replace with iterator to use less memory and allow early stopping
-func (rb *RoaringBitmap) GetDocIDs() []uint32 {
-	var docIDs []uint32
-	for key, container := range rb.containers {
-		base := uint32(key) << 16
-		switch c := container.(type) {
-		case *ArrayContainer:
-			for _, val := range c.values {
-				docIDs = append(docIDs, base|uint32(val))
-			}
-		case *BitmapContainer:
-			for i, word := range c.Bitmap {
-				if word == 0 {
-					continue
-				}
-				for bit := 0; bit < 64; bit++ {
-					if word&(1<<bit) != 0 {
-						docID := base | uint32(i*64+bit)
-						docIDs = append(docIDs, docID)
-					}
-				}
-			}
-		}
-	}
-	return docIDs
 }
 
 // Rank counts the number of values (docIDs) in the RoaringBitmap up to the given value.

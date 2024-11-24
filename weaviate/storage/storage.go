@@ -10,6 +10,7 @@ package storage
 // - Improve block skipping strategies for large posting lists to enhance query speed.
 // - Explore using SIMD (Single Instruction, Multiple Data) techniques for accelerating operations on posting lists.
 // - Extend support for storing additional metadata to improve query efficiency.
+// - Evaluate using Snappy or Zstandard for compressing serialized data.
 
 import (
 	"encoding/binary"
