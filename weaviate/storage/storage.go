@@ -164,7 +164,7 @@ func (s *Segment) BulkIndex(termPostings []fetcher.TermPosting) error {
 
 		// Add the document to the block (if does not already exist)
 		if !block.Bitmap.Contains(termPosting.DocID) {
-			if err := block.AddDocument(termPosting.DocID, termPosting.TermFrequency); err != nil {
+			if err := block.AddTermPosting(termPosting.DocID, termPosting.TermFrequency); err != nil {
 				return fmt.Errorf("failed to add document to block: %w", err)
 			}
 			termMetadata.TotalDocs++
@@ -182,8 +182,8 @@ func NewBlock() *Block {
 	}
 }
 
-// AddDocument adds a document's ID and term frequency to the block.
-func (b *Block) AddDocument(docID uint32, termFrequency float32) error {
+// AddTermPosting adds a document's ID and term frequency to the block.
+func (b *Block) AddTermPosting(docID uint32, termFrequency float32) error {
 	b.Bitmap.Add(docID)
 	// Keep track of the MinDocID and MaxDocID
 	if b.Bitmap.Cardinality() == 1 {
@@ -198,10 +198,7 @@ func (b *Block) AddDocument(docID uint32, termFrequency float32) error {
 		}
 	}
 
-	// Add term frequency
 	b.TermFrequencies = append(b.TermFrequencies, termFrequency)
-
-	// Sanity check for consistency
 	if b.Bitmap.Cardinality() != len(b.TermFrequencies) {
 		return fmt.Errorf("mismatch between bitmap cardinality and term frequencies")
 	}
