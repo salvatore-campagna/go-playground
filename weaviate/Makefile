@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: all build clean index query test test-verbose test-storage test-fetcher test-engine fmt vet help download archive doc
+.PHONY: all build clean index query test test-no-cache test-verbose test-storage test-fetcher test-engine fmt vet help download archive doc
 
 BIN_DIR := bin
 CREATE_INDEX := $(BIN_DIR)/index
@@ -35,6 +35,9 @@ test-fetcher:
 
 test-engine:
 	go test ./engine
+
+test-no-cache:
+	go test ./... -count=1
 
 fmt:
 	go fmt ./...
@@ -90,6 +93,7 @@ help:
 	@echo "  make clean                 - Remove all built files"
 	@echo "  make delete-segments       - Remove the segment directory"
 	@echo "  make test                  - Run all tests"
+	@echo "  make test-no-cached        - RUn all tests ignoring cached results"
 	@echo "  make test-verbose          - Run all tests with verbose output"
 	@echo "  make test-storage          - Run tests for the storage package"
 	@echo "  make test-fetcher          - Run tests for the fetcher package"
