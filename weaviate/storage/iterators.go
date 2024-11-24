@@ -92,6 +92,12 @@ func (it *RoaringBitmapIterator) Next() (bool, error) {
 			}
 			key := it.keys[it.currentKey]
 			it.container = it.bitmap.containers[key]
+
+			// Check if the new container is empty
+			if it.container.Cardinality() == 0 {
+				continue // Skip empty containers
+			}
+
 			it.index = -1 // Reset index for the new container
 		}
 
@@ -189,7 +195,7 @@ func NewTermIterator(blocks []*Block, term string) PostingListIterator {
 	}
 
 	firstBlock := blocks[0]
-	if firstBlock == nil || firstBlock.Bitmap == nil {
+	if firstBlock == nil || firstBlock.Bitmap == nil || firstBlock.Bitmap.Cardinality() == 0 {
 		return &EmptyIterator{}
 	}
 

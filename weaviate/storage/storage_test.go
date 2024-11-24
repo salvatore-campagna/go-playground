@@ -150,3 +150,93 @@ func TestSegmentTermLookup(t *testing.T) {
 		t.Fatalf("expected iterator to be exhausted, but it still has elements")
 	}
 }
+
+func TestSegmentTotalDocsTracking(t *testing.T) {
+	segment := NewSegment()
+
+	postings := []fetcher.TermPosting{
+		{Term: "database", DocID: 1, TermFrequency: 1.5},
+		{Term: "search", DocID: 1, TermFrequency: 0.7},
+		{Term: "database", DocID: 2, TermFrequency: 2.0},
+	}
+
+	if err := segment.BulkIndex(postings); err != nil {
+		t.Fatalf("Failed to index terms: %v", err)
+	}
+
+	expectedTotalDocs := uint32(2)
+	if segment.TotalDocs() != expectedTotalDocs {
+		t.Errorf("Expected TotalDocs %d, got %d", expectedTotalDocs, segment.TotalDocs())
+	}
+}
+
+func TestBlockOverflowHandling(t *testing.T) {
+	segment := NewSegment()
+	postings := make([]fetcher.TermPosting, MaxEntriesPerBlock+1)
+
+	for i := 0; i <= MaxEntriesPerBlock; i++ {
+		postings[i] = fetcher.TermPosting{Term: "overflow", DocID: uint32(i + 1), TermFrequency: 1.0}
+	}
+
+	if err := segment.BulkIndex(postings); err != nil {
+		t.Fatalf("Failed to index terms: %v", err)
+	}
+
+	termMetadata := segment.Terms["overflow"]
+	if len(termMetadata.Blocks) != 2 {
+		t.Errorf("Expected 2 blocks, got %d", len(termMetadata.Blocks))
+	}
+
+	if termMetadata.Blocks[0].Bitmap.Cardinality() != MaxEntriesPerBlock {
+		t.Errorf("Expected first block to have %d entries, got %d", MaxEntriesPerBlock, termMetadata.Blocks[0].Bitmap.Cardinality())
+	}
+
+	if termMetadata.Blocks[1].Bitmap.Cardinality() != 1 {
+		t.Errorf("Expected second block to have 1 entry, got %d", termMetadata.Blocks[1].Bitmap.Cardinality())
+	}
+}
+
+func TestTermFrequenciesConsistency(t *testing.T) {
+	block := NewBlock()
+
+	docIDs := []uint32{10, 20, 30, 40}
+	frequencies := []float32{0.5, 0.8, 1.2, 1.5}
+
+	for i, docID := range docIDs {
+		if err := block.AddDocument(docID, frequencies[i]); err != nil {
+			t.Fatalf("Failed to add document: %v", err)
+		}
+	}
+
+	if block.Bitmap.Cardinality() != len(block.TermFrequencies) {
+		t.Errorf("Mismatch between Bitmap cardinality (%d) and TermFrequencies length (%d)", block.Bitmap.Cardinality(), len(block.TermFrequencies))
+	}
+}
+
+func TestSegmentSerialization2(t *testing.T) {
+	segment := NewSegment()
+
+	postings := []fetcher.TermPosting{
+		{Term: "vector", DocID: 1, TermFrequency: 1.0},
+		{Term: "vector", DocID: 2, TermFrequency: 2.0},
+		{Term: "database", DocID: 3, TermFrequency: 1.5},
+	}
+
+	if err := segment.BulkIndex(postings); err != nil {
+		t.Fatalf("Failed to index terms: %v", err)
+	}
+
+	buffer := &bytes.Buffer{}
+	if err := segment.Serialize(buffer); err != nil {
+		t.Fatalf("Failed to serialize segment: %v", err)
+	}
+
+	deserializedSegment := NewSegment()
+	if err := deserializedSegment.Deserialize(buffer); err != nil {
+		t.Fatalf("Failed to deserialize segment: %v", err)
+	}
+
+	if deserializedSegment.TotalDocs() != segment.TotalDocs() {
+		t.Errorf("Expected TotalDocs %d after deserialization, got %d", segment.TotalDocs(), deserializedSegment.TotalDocs())
+	}
+}

@@ -53,7 +53,6 @@ import (
 	"io"
 	"math/bits"
 	"sort"
-	"weaviate/encoders"
 )
 
 const ContainerConversionThreshold = 4096
@@ -85,7 +84,6 @@ type RoaringContainer interface {
 type ArrayContainer struct {
 	values      []uint16
 	cardinality int
-	encoder     encoders.ArrayEncoderDecoder
 }
 
 // TODO: smarter encoder configuration
@@ -96,7 +94,6 @@ func NewArrayContainer() *ArrayContainer {
 	return &ArrayContainer{
 		values:      []uint16{},
 		cardinality: 0,
-		encoder:     encoders.NewDeltaEncoder(DeltaEncodingThreshold),
 	}
 }
 
@@ -126,37 +123,37 @@ func (ac *ArrayContainer) Cardinality() int {
 }
 
 // Serialize writes the ArrayContainer's data to the provided writer in a compact format.
-// Serialize writes the ArrayContainer's data to the provided writer in a compact format.
 func (ac *ArrayContainer) Serialize(writer io.Writer) error {
 	length := uint16(len(ac.values))
 	if err := binary.Write(writer, binary.LittleEndian, length); err != nil {
 		return fmt.Errorf("error while serializing array container length: %v", err)
 	}
 
-	if err := ac.encoder.Encode(ac.values, writer); err != nil {
-		return fmt.Errorf("error while encoding array container: %v", err)
+	for _, value := range ac.values {
+		if err := binary.Write(writer, binary.LittleEndian, value); err != nil {
+			return fmt.Errorf("error while serializing array container value: %v", err)
+		}
 	}
 
 	return nil
 }
 
-// Deserialize reads ArrayContainer data from the provided reader.
 func (ac *ArrayContainer) Deserialize(reader io.Reader) error {
 	var length uint16
 	if err := binary.Read(reader, binary.LittleEndian, &length); err != nil {
 		return fmt.Errorf("error while deserializing array container length: %v", err)
 	}
-	decodedValues, err := ac.encoder.Decode(reader, int(length))
-	if err != nil {
-		return fmt.Errorf("error while decoding array container: %v", err)
+
+	values := make([]uint16, length)
+	for i := 0; i < int(length); i++ {
+		if err := binary.Read(reader, binary.LittleEndian, &values[i]); err != nil {
+			return fmt.Errorf("error while deserializing array container value: %v", err)
+		}
 	}
 
-	if len(decodedValues) != int(length) {
-		return fmt.Errorf("error while decoding array container, expected len %d, got len %d", length, len(decodedValues))
-	}
+	ac.values = values
+	ac.cardinality = len(values)
 
-	ac.values = decodedValues
-	ac.cardinality = len(decodedValues)
 	return nil
 }
 

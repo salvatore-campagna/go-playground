@@ -95,6 +95,14 @@ func (h *minBlockHeap) Pop() interface{} {
 	return item
 }
 
+// Top returns the top element of the min-heap without removing it.
+func (h *minBlockHeap) Top() *blockEntry {
+	if len(*h) > 0 {
+		return (*h)[0]
+	}
+	return nil
+}
+
 // getTermPostingListIterators retrieves posting list iterators for the given terms from all segments.
 // Returns a map of terms to their respective iterators or an error if no iterators are found.
 func getTermPostingListIterators(terms []string, segments []*storage.Segment) (map[string][]storage.PostingListIterator, error) {
@@ -120,18 +128,18 @@ func getTermPostingListIterators(terms []string, segments []*storage.Segment) (m
 	return termIterators, nil
 }
 
-// MultiTermQuery processes a query with multiple terms and returns the ranked results.
-// The `less` function determines the ranking order of scored documents.
 func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 ScoredDocument) bool) ([]ScoredDocument, error) {
+	// Step 1: Retrieve posting list iterators for each term in the query across all segments.
 	termIterators, err := getTermPostingListIterators(terms, qe.segments)
 	if err != nil {
 		return nil, err
 	}
 
+	// Step 2: Initialize a min-heap to process posting list blocks efficiently.
 	blockHeap := &minBlockHeap{}
 	heap.Init(blockHeap)
 
-	termDF := make(map[string]int) // Document frequency (DF) for each term
+	// Step 3: Push posting list blocks into the heap.
 	for term, iterators := range termIterators {
 		for _, iter := range iterators {
 			hasNext, err := iter.Next()
@@ -151,75 +159,113 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 				})
 			}
 		}
-
-		if len(iterators) > 0 {
-			segment := qe.segments[0]
-			if metadata, exists := segment.Terms[term]; exists {
-				termDF[term] = int(metadata.TotalDocs)
-			} else {
-				termDF[term] = 0
-			}
-		}
 	}
 
-	scoredDocs := make(map[uint32]float64)
-	docTermCounts := make(map[uint32]int)
-	termDocTFs := make(map[string]map[uint32]float32)
+	// Step 4: Initialize an array to store scored documents.
+	var scoredDocuments []ScoredDocument
 
-	for _, term := range terms {
-		termDocTFs[term] = make(map[uint32]float32)
-	}
-
+	// Step 5: Process the min-heap to evaluate documents.
 	for blockHeap.Len() > 0 {
-		entry := heap.Pop(blockHeap).(*blockEntry)
-		docID := entry.docID
-		docTermCounts[docID]++
-		tf, err := entry.iterator.TermFrequency()
-		if err != nil {
-			return nil, fmt.Errorf("error retrieving TermFrequency: %v", err)
-		}
-		termDocTFs[entry.iterator.Term()][docID] = tf
+		// Check the smallest `docID` in the heap.
+		top := (*blockHeap)[0]
+		currentDocID := top.docID
 
-		if docTermCounts[docID] == len(terms) {
-			totalScore := 0.0
-			for term, termFrequencyMap := range termDocTFs {
-				tf := termFrequencyMap[docID]
-				df := termDF[term]
-				idf := math.Log(float64(qe.totalDocs+1) / float64(df+1))
-				tfidf := float64(tf) * idf
-				totalScore += tfidf
+		// Collect all entries matching the current `docID`.
+		matchingEntries := []*blockEntry{}
+		for _, entry := range *blockHeap {
+			if entry.docID == currentDocID {
+				matchingEntries = append(matchingEntries, entry)
 			}
-			scoredDocs[docID] = totalScore
 		}
 
-		hasNext, err := entry.iterator.Next()
-		if err != nil {
-			return nil, fmt.Errorf("error advancing iterator: %v", err)
-		}
-		if hasNext {
-			docID, err := entry.iterator.DocID()
-			if err != nil {
-				return nil, fmt.Errorf("error retrieving next DocID: %v", err)
+		// Check if all terms are present in the matching entries.
+		if len(matchingEntries) == len(terms) {
+			// Compute the score for the matching document only if all terms match.
+			var score float64
+			for _, entry := range matchingEntries {
+				// Retrieve the term frequency
+				termFrequency, err := entry.iterator.TermFrequency()
+				if err != nil {
+					return nil, fmt.Errorf("error retrieving TermFrequency: %v", err)
+				}
+				term := entry.iterator.Term()
+
+				// Calculate document frequency (DF) for the term.
+				df := 0
+				for _, segment := range qe.segments {
+					if metadata, exists := segment.Terms[term]; exists {
+						df += int(metadata.TotalDocs)
+					}
+				}
+				score += float64(termFrequency) * math.Log(float64(qe.totalDocs+1)/float64(df+1))
 			}
-			block := entry.block
-			heap.Push(blockHeap, &blockEntry{
-				block:    block,
-				iterator: entry.iterator,
-				docID:    docID,
+
+			// Add the DocID and the corresponding score to the query result for the matched document.
+			scoredDocuments = append(scoredDocuments, ScoredDocument{
+				DocID: currentDocID,
+				Score: score,
 			})
+
+			// Advance all iterators pointing to the currentDocID and matching the term.
+			for _, entry := range matchingEntries {
+				// Attempt to move the iterator to the next document in the posting list.
+				hasNext, err := entry.iterator.Next()
+				if err != nil {
+					return nil, fmt.Errorf("error advancing iterator: %v", err)
+				}
+
+				if hasNext {
+					// The iterator successfully advanced to the next document.
+					// Update the `docID` in the heap entry with the new document ID.
+					entry.docID, _ = entry.iterator.DocID()
+
+					// Reorganize the heap to maintain the min-heap property, as the updated
+					// `docID` might change the order of elements in the heap.
+					heap.Fix(blockHeap, heapIndex(blockHeap, entry))
+				} else {
+					// The iterator has been exhausted (no more documents to process).
+					// Remove the iterator from the heap, as it is no longer contributing
+					// to the query results.
+					heap.Remove(blockHeap, heapIndex(blockHeap, entry))
+				}
+			}
+
+		} else {
+			// Advance the iterator for the smallest docID.
+			smallest := heap.Pop(blockHeap).(*blockEntry)
+			hasNext, err := smallest.iterator.Next()
+			if err != nil {
+				return nil, fmt.Errorf("error advancing iterator: %v", err)
+			}
+			if hasNext {
+				docID, err := smallest.iterator.DocID()
+				if err != nil {
+					return nil, fmt.Errorf("error retrieving next DocID: %v", err)
+				}
+				smallest.docID = docID
+				heap.Push(blockHeap, smallest)
+			}
 		}
 	}
 
-	var sortedScoredDocs []ScoredDocument
-	for docID, score := range scoredDocs {
-		sortedScoredDocs = append(sortedScoredDocs, ScoredDocument{
-			DocID: docID,
-			Score: score,
-		})
-	}
-	sort.Slice(sortedScoredDocs, func(i, j int) bool {
-		return less(sortedScoredDocs[i], sortedScoredDocs[j])
+	// Step 6: Sort the results based on the provided comparison function.
+	sort.Slice(scoredDocuments, func(i, j int) bool {
+		return less(scoredDocuments[i], scoredDocuments[j])
 	})
 
-	return sortedScoredDocs, nil
+	// Log the final results.
+	fmt.Printf("Final Scored Documents: %+v\n", scoredDocuments)
+
+	// Return the sorted results.
+	return scoredDocuments, nil
+}
+
+// heapIndex is a helper function to find the index of an entry in the heap.
+func heapIndex(h *minBlockHeap, entry *blockEntry) int {
+	for i, e := range *h {
+		if e == entry {
+			return i
+		}
+	}
+	return -1
 }
