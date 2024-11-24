@@ -237,7 +237,7 @@ func TestMultiSegmentQueryWithResults(t *testing.T) {
 		t.Fatalf("Failed to execute query: %v", err)
 	}
 
-	// DocIDs 1, 2, and 3 should match both terms.
+	// DocIDs 1, 2, and 3 match both terms.
 	expectedDocIDs := []uint32{1, 2, 3}
 	if len(results) != len(expectedDocIDs) {
 		t.Fatalf("Expected %d results, got %d", len(expectedDocIDs), len(results))
