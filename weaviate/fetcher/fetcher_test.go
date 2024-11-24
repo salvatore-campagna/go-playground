@@ -34,22 +34,19 @@ func TestParseJsonSegments(t *testing.T) {
 		t.Errorf("Failed to parse valid JSON: %v", err)
 	}
 
-	// Check the number of segments
 	if len(segments) != 2 {
 		t.Errorf("Expected 2 segments, got %d", len(segments))
 	}
 
-	// Check the number of documents in each segment
 	if len(segments[0]) != 2 {
-		t.Errorf("Expected 2 documents in first segment, got %d", len(segments[0]))
+		t.Errorf("Expected 2 term postings in first segment, got %d", len(segments[0]))
 	}
 
 	if len(segments[1]) != 1 {
-		t.Errorf("Expected 1 document in second segment, got %d", len(segments[1]))
+		t.Errorf("Expected 1 term posting in second segment, got %d", len(segments[1]))
 	}
 
-	// Check the contents of the documents
-	expectedDocs := []struct {
+	expectedTermPostings := []struct {
 		segmentIndex int
 		docIndex     int
 		term         string
@@ -61,16 +58,16 @@ func TestParseJsonSegments(t *testing.T) {
 		{1, 0, "great", 1, 0.3},
 	}
 
-	for _, expected := range expectedDocs {
-		doc := segments[expected.segmentIndex][expected.docIndex]
-		if doc.Term != expected.term {
-			t.Errorf("Expected term %s, got %s", expected.term, doc.Term)
+	for _, expectedTermPosting := range expectedTermPostings {
+		doc := segments[expectedTermPosting.segmentIndex][expectedTermPosting.docIndex]
+		if doc.Term != expectedTermPosting.term {
+			t.Errorf("Expected term %s, got %s", expectedTermPosting.term, doc.Term)
 		}
-		if doc.DocID != expected.docID {
-			t.Errorf("Expected docID %d, got %d", expected.docID, doc.DocID)
+		if doc.DocID != expectedTermPosting.docID {
+			t.Errorf("Expected docID %d, got %d", expectedTermPosting.docID, doc.DocID)
 		}
-		if doc.TermFrequency != expected.termFreq {
-			t.Errorf("Expected frequency %f, got %f", expected.termFreq, doc.TermFrequency)
+		if doc.TermFrequency != expectedTermPosting.termFreq {
+			t.Errorf("Expected frequency %f, got %f", expectedTermPosting.termFreq, doc.TermFrequency)
 		}
 	}
 }
