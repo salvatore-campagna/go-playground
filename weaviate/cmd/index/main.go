@@ -52,13 +52,13 @@ func main() {
 			return
 		}
 
-		//segment.PrintInfo()
 		if err := segment.WriteSegment(segmentFile); err != nil {
 			fmt.Printf("Error writing segment %s: %v\n", segmentPath, err)
 			segmentFile.Close()
 			return
 		}
 		segmentFile.Close()
+		segment.PrintInfo()
 	}
 
 	fmt.Println("Segments created successfully.")

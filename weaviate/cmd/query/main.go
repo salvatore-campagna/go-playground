@@ -39,7 +39,6 @@ func main() {
 
 		totalDocs += segment.TotalDocs()
 		segments = append(segments, segment)
-		segment.PrintInfo()
 	}
 
 	if len(segments) == 0 {
