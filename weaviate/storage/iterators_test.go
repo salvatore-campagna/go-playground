@@ -240,14 +240,20 @@ func TestBitmapIteratorSingleContainer(t *testing.T) {
 
 func TestBitmapIteratorTermFrequency(t *testing.T) {
 	bitmap := NewRoaringBitmap()
-
-	for i := 10_000; i < 16_000; i++ {
+	for i := 0; i < 200_000; i++ {
 		bitmap.Add(uint32(i))
+	}
+
+	expectedCount := 200_000
+	if bitmap.Cardinality() != expectedCount {
+		t.Fatalf("Bitmap cardinality mismatch: expected %d, got %d", expectedCount, bitmap.Cardinality())
 	}
 
 	randomTermFrequency := rand.Float32()
 	it := NewRoaringBitmapIterator(bitmap, "test", randomTermFrequency)
-	for i := 10_000; i < 16_000; i++ {
+
+	count := 0
+	for i := 0; i < 200_000; i++ {
 		hasNext, err := it.Next()
 		if err != nil {
 			t.Fatalf("Unexpected error during iteration: %v", err)
@@ -263,8 +269,23 @@ func TestBitmapIteratorTermFrequency(t *testing.T) {
 		}
 
 		if termFrequency != randomTermFrequency {
-			t.Errorf("Expected TermFrequency 3.0, but got %.2f", termFrequency)
+			t.Errorf("Expected TermFrequency %.2f, but got %.2f", randomTermFrequency, termFrequency)
 		}
+
+		count++
+	}
+
+	hasNext, err := it.Next()
+	if err != nil {
+		t.Fatalf("Unexpected error after completing iteration: %v", err)
+	}
+
+	if hasNext {
+		t.Fatalf("Iterator did not terminate after expected number of documents")
+	}
+
+	if count != expectedCount {
+		t.Fatalf("Mismatch in number of documents iterated: expected %d, got %d", expectedCount, count)
 	}
 }
 

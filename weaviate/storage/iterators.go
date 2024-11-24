@@ -3,10 +3,8 @@ package storage
 // # TODOs
 //
 //   - Add support for filtering documents during iteration.
-//   - Implement batch retrieval for iterators to improve performance on large posting lists.
 //   - Add more set operations (e.g., difference, XOR) to iterators for advanced queries.
 //   - Introduce custom error types for iterator-related errors.
-//   - Validate term frequency consistency during iteration.
 //   - Add checksums to ensure data consistency during iteration and storage.
 
 import (
@@ -16,18 +14,9 @@ import (
 
 // BitmapIterator defines an interface for iterating over document IDs stored in a bitmap.
 type BitmapIterator interface {
-	// Next advances the iterator to the next document ID. It returns true if there is a next document ID,
-	// false otherwise. Any error encountered during iteration is returned.
 	Next() (bool, error)
-
-	// DocID returns the current document ID pointed to by the iterator. If no valid document is available,
-	// it returns an error.
 	DocID() (uint32, error)
-
-	// Term returns the term associated with this iterator.
 	Term() string
-
-	// TermFrequency returns the term frequency associated with the current document ID.
 	TermFrequency() (float32, error)
 }
 
@@ -67,43 +56,47 @@ func NewRoaringBitmapIterator(bitmap *RoaringBitmap, term string, termFrequency 
 func (it *RoaringBitmapIterator) Next() (bool, error) {
 	for {
 		// Move to the next container if no container or end of current container
-		if it.container == nil || it.index >= it.container.Cardinality()-1 {
+		if it.container == nil || it.index >= it.container.Cardinality() {
 			it.currentKey++
 			if it.currentKey >= len(it.keys) {
 				// No more containers, iteration is complete
 				return false, nil
 			}
+
+			// Move to the next container
 			key := it.keys[it.currentKey]
 			it.container = it.bitmap.containers[key]
 
-			// Check if the new container is empty
+			// Skip empty containers
 			if it.container.Cardinality() == 0 {
-				continue // Skip empty containers
+				continue
 			}
 
-			it.index = -1 // Reset index for the new container
+			// Reset index for the new container
+			it.index = 0
 		}
 
 		// Move inside the current container
-		it.index++
-		if it.index < it.container.Cardinality() {
-			if arrayContainer, ok := it.container.(*ArrayContainer); ok {
-				it.currentDocID = uint32(it.keys[it.currentKey])<<16 | uint32(arrayContainer.values[it.index])
-			} else if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
-				count := 0
-				for i, word := range bitmapContainer.Bitmap {
-					for j := 0; j < 64; j++ {
-						if word&(1<<j) != 0 {
-							if count == it.index {
-								it.currentDocID = uint32(it.keys[it.currentKey])<<16 | uint32(i*64+j)
-								break
-							}
-							count++
+		if arrayContainer, ok := it.container.(*ArrayContainer); ok {
+			it.currentDocID = uint32(it.keys[it.currentKey])<<16 | uint32(arrayContainer.values[it.index])
+			it.index++
+			return true, nil
+		} else if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
+			// Find the next set bit in the bitmap
+			for i := it.index / 64; i < len(bitmapContainer.Bitmap); i++ {
+				word := bitmapContainer.Bitmap[i]
+				for j := 0; j < 64; j++ {
+					if word&(1<<j) != 0 {
+						if (i*64 + j) >= it.index {
+							it.currentDocID = uint32(it.keys[it.currentKey])<<16 | uint32(i*64+j)
+							it.index = i*64 + j + 1
+							return true, nil
 						}
 					}
 				}
 			}
-			return true, nil
+			// If no more bits are set, move to the next container
+			it.index = bitmapContainer.Cardinality() // Exhaust current container
 		}
 	}
 }
@@ -113,24 +106,8 @@ func (it *RoaringBitmapIterator) DocID() (uint32, error) {
 	if it.currentKey < 0 || it.currentKey >= len(it.keys) {
 		return 0, fmt.Errorf("invalid key while iterating container")
 	}
-	key := uint32(it.keys[it.currentKey]) << 16
-	if arrayContainer, ok := it.container.(*ArrayContainer); ok {
-		return key | uint32(arrayContainer.values[it.index]), nil
-	}
-	if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
-		count := 0
-		for i, word := range bitmapContainer.Bitmap {
-			for j := 0; j < 64; j++ {
-				if word&(1<<j) != 0 {
-					if count == it.index {
-						return key | uint32(i*64+j), nil
-					}
-					count++
-				}
-			}
-		}
-	}
-	return 0, fmt.Errorf("unknown container type")
+
+	return it.currentDocID, nil
 }
 
 // Term returns the term associated with the iterator.
@@ -146,19 +123,10 @@ func (it *RoaringBitmapIterator) TermFrequency() (float32, error) {
 // PostingListIterator defines an interface for iterating over posting lists.
 // It provides methods to traverse document IDs and retrieve term frequencies.
 type PostingListIterator interface {
-	// Next advances the iterator to the next document ID in the posting list.
 	Next() (bool, error)
-
-	// DocID returns the current document ID in the posting list.
 	DocID() (uint32, error)
-
-	// Term returns the term associated with this iterator.
 	Term() string
-
-	// TermFrequency returns the term frequency associated with the current document ID.
 	TermFrequency() (float32, error)
-
-	// CurrentBlock returns the current block being processed by the iterator.
 	CurrentBlock() *Block
 }
 
@@ -306,7 +274,7 @@ func (it *EmptyIterator) Next() (bool, error) {
 
 // DocID returns an error because there are no valid elements in the iterator.
 func (it *EmptyIterator) DocID() (uint32, error) {
-	return 0, fmt.Errorf("no valid DocID in empty iterator")
+	return 0, fmt.Errorf("invalid DocID in empty iterator")
 }
 
 // Term retrieves the term for an empty iterator (always empty string).
@@ -316,7 +284,7 @@ func (it *EmptyIterator) Term() string {
 
 // TermFrequency returns an error because there are no valid elements in the iterator.
 func (it *EmptyIterator) TermFrequency() (float32, error) {
-	return 0, fmt.Errorf("no valid TermFrequency in empty iterator")
+	return 0, fmt.Errorf("invalid term frequency in empty iterator")
 }
 
 // CurrentBlock returns nil because there are no blocks in an empty iterator.
