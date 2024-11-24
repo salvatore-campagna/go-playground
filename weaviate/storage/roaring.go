@@ -29,8 +29,6 @@ const ContainerConversionThreshold = 4096
 // ContainerType identifies the internal container implementation.
 type ContainerType uint8
 
-const DeltaEncodingThreshold = 128
-
 const (
 	ArrayContainerType ContainerType = iota + 1
 	BitmapContainerType

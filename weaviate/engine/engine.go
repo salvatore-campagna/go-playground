@@ -159,7 +159,13 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 		top := (*blockHeap)[0]
 		currentDocID := top.docID
 
-		// Collect all entries matching the current `docID`.
+		// TODO: The logic to skip blocks based on MaxDocID is not currently testable
+		// because block creation depends on the `MaxDocumentsPerBlock` threshold.
+		// To make this testable, we need a way to configure or mock this value during
+		// segment creation. This would allow us to create smaller blocks and design
+		// tests where block creation can be controlled acting on the value of
+		// `MaxDocumentsPerBlock`.
+
 		matchingEntries := []*blockEntry{}
 		for _, entry := range *blockHeap {
 			if entry.docID == currentDocID {

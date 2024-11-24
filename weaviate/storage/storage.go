@@ -21,9 +21,9 @@ import (
 
 // Constants for segment format versioning
 const (
-	magicNumber          = 0x007E8B11 // Magic number to identify segment files
-	version              = 1          // Current segment format version
-	MaxDcoumentsPerBlock = 16 * 1024  // Maximum number of documents per block
+	magicNumber          = 0x007E8B11
+	version              = 1
+	MaxDcoumentsPerBlock = 16 * 1024
 )
 
 // Segment represents a collection of terms and their posting lists.
