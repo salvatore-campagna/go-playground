@@ -211,25 +211,26 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 				// Attempt to move the iterator to the next document in the posting list.
 				hasNext, err := entry.iterator.Next()
 				if err != nil {
+					// If advancing the iterator fails, terminate the query execution and return the error.
 					return nil, fmt.Errorf("error advancing iterator: %v", err)
 				}
 
 				if hasNext {
 					// The iterator successfully advanced to the next document.
-					// Update the `docID` in the heap entry with the new document ID.
+					// Retrieve the new `docID` from the iterator and update the heap entry.
 					entry.docID, _ = entry.iterator.DocID()
 
-					// Reorganize the heap to maintain the min-heap property, as the updated
-					// `docID` might change the order of elements in the heap.
-					heap.Fix(blockHeap, heapIndex(blockHeap, entry))
+					// Reorganize the heap to maintain the min-heap property.
+					// This is necessary because the updated `docID` could affect the order of the heap.
+					// Since we are always working with the top element, the index is known to be `0`.
+					heap.Fix(blockHeap, 0)
 				} else {
-					// The iterator has been exhausted (no more documents to process).
-					// Remove the iterator from the heap, as it is no longer contributing
-					// to the query results.
-					heap.Remove(blockHeap, heapIndex(blockHeap, entry))
+					// The iterator has been exhausted (no more documents in the posting list).
+					// Remove the corresponding entry from the heap, as it no longer contributes
+					// to the query results. The entry being processed is always at the top of the heap.
+					heap.Remove(blockHeap, 0)
 				}
 			}
-
 		} else {
 			// Advance the iterator for the smallest docID.
 			smallest := heap.Pop(blockHeap).(*blockEntry)
@@ -252,20 +253,5 @@ func (qe *queryEngine) MultiTermQuery(terms []string, less func(doc1, doc2 Score
 	sort.Slice(scoredDocuments, func(i, j int) bool {
 		return less(scoredDocuments[i], scoredDocuments[j])
 	})
-
-	// Log the final results.
-	fmt.Printf("Final Scored Documents: %+v\n", scoredDocuments)
-
-	// Return the sorted results.
 	return scoredDocuments, nil
-}
-
-// heapIndex is a helper function to find the index of an entry in the heap.
-func heapIndex(h *minBlockHeap, entry *blockEntry) int {
-	for i, e := range *h {
-		if e == entry {
-			return i
-		}
-	}
-	return -1
 }
