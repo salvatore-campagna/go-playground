@@ -4,6 +4,7 @@ package engine
 //
 // - Implement new queries.
 // - Modularize query execution.
+// - Extract doc counts from segments.
 
 import (
 	"container/heap"
@@ -26,10 +27,9 @@ type QueryEngine interface {
 	MultiTermQuery(terms []string, less func(doc1, doc2 ScoredDocument) bool) ([]ScoredDocument, error)
 }
 
-// queryEngine is the default implementation of the QueryEngine interface.
 type queryEngine struct {
-	segments  []*storage.Segment // List of index segments to query.
-	totalDocs uint32             // Total number of documents across all segments.
+	segments  []*storage.Segment
+	totalDocs uint32
 }
 
 // NewQueryEngine initializes a new QueryEngine with the given segments and total document count.
@@ -82,14 +82,6 @@ func (h *minBlockHeap) Pop() interface{} {
 	item := old[n-1]
 	*h = old[:n-1]
 	return item
-}
-
-// Top returns the top element of the min-heap without removing it.
-func (h *minBlockHeap) Top() *blockEntry {
-	if len(*h) > 0 {
-		return (*h)[0]
-	}
-	return nil
 }
 
 // getTermPostingListIterators retrieves posting list iterators for the given terms from all segments.

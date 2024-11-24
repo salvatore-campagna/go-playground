@@ -41,7 +41,6 @@ func FetchJson(path string) ([]byte, error) {
 		return data, nil
 	}
 
-	// Treat the path as a local file.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read local file: %w", err)
