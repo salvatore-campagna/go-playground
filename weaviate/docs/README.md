@@ -179,8 +179,8 @@ Scored documents: 3
 #### Blocks
 
 - **Block 1**: `(term: "rebels", DocID: 1, tf: 1.0)`, `(term: "hope", DocID: 2, tf: 0.5)`
-- **Block 2**: `(term: "empire", DocID: 1, tf: 1.0)`, `(term: "rebels", DocID: 2, tf: 0.7)`
-- **Block 3**: `(term: "empire", DocID: 2, tf: 1.5)`, `(term: "hope", DocID: 3, tf: 1.2)`
+- **Block 2**: `(term: "rebels", DocID: 2, tf: 0.7)`
+- **Block 3**: `(term: "hope", DocID: 3, tf: 1.2)`
 
 ---
 
@@ -188,17 +188,17 @@ Scored documents: 3
 
 ##### Step 1
 
-- `(term: "rebels", DocID: 1, tf: 1.0)`, `...`, `nil`
-- `(term: "empire", DocID: 1, tf: 1.0)`, `...`, `nil`
-- `(term: "empire", DocID: 2, tf: 1.5)`, `...`, `nil`
+- `(term: "rebels", DocID: 1, tf: 1.0)`, `(term: "hope", DocID: 2, tf: 0.5)`
+- `(term: "rebels", DocID: 2, tf: 0.7)`, `nil`
+- `(term: "hope", DocID: 3, tf: 1.2)`, `nil`
 
-No match, discard `DocID:1`, as document with `DocID: 1` has terms "rebels" and "empire".
+No match, discard the smallest `DocID:1`.
 
 ##### Step 2
 
-- `(term: "hope",   DocID: 2, tf: 0.5)`, `nil`
+- `(term: "hope", DocID: 2, tf: 0.5)`, `nil`
 - `(term: "rebels", DocID: 2, tf: 0.7)`, `nil`
-- `(term: "empire", DocID: 2, tf: 1.5)`, `...`
+- `(term: "hope", DocID: 3, tf: 1.2)`, `nil`
 
 Document with `DocID: 2` matches both "hope" and "rebels", as a result it is a match.
 
@@ -210,10 +210,10 @@ Document with `DocID: 2` matches both "hope" and "rebels", as a result it is a m
 - `DF(term: "hope"): 2` (Documents `2` and `3`)
 - `TF(term: "rebels", DocID: 2): 0.7`
 - `DF(term: "rebels", DocID: 2): 0.5`
-- `TF-IDF(term: "rebels", DocID: 2): 0.09`
-- `TF-IDF(term: "hope", DocID: 2): 0.06`
+- `TF-IDF(term: "rebels", DocID: 2): 0.20`
+- `TF-IDF(term: "hope", DocID: 2): 0.14`
 
-The result is a score for document `DocID: 2` of `0.5`.
+The result is a score for document `DocID: 2` of `0.34`.
 
 ##### Step 3
 
