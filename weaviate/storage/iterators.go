@@ -83,8 +83,8 @@ func (it *RoaringBitmapIterator) Next() (bool, error) {
 			return true, nil
 		} else if bitmapContainer, ok := it.container.(*BitmapContainer); ok {
 			// Find the next set bit in the bitmap
-			for i := it.index / 64; i < len(bitmapContainer.Bitmap); i++ {
-				word := bitmapContainer.Bitmap[i]
+			for i := it.index / 64; i < len(bitmapContainer.bitmap); i++ {
+				word := bitmapContainer.bitmap[i]
 				for j := 0; j < 64; j++ {
 					if word&(1<<j) != 0 {
 						if (i*64 + j) >= it.index {

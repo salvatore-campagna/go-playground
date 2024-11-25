@@ -207,14 +207,14 @@ func (ac *ArrayContainer) ToBitmapContainer() *BitmapContainer {
 // BitmapContainer implements RoaringContainer using a bitmap,
 // optimized for dense data sets (cardinality > 4096).
 type BitmapContainer struct {
-	Bitmap      []uint64
+	bitmap      []uint64
 	cardinality int
 }
 
 // NewBitmapContainer creates a fixed-size BitmapContainer to handle all possible uint16 values.
 func NewBitmapContainer() *BitmapContainer {
 	return &BitmapContainer{
-		Bitmap:      make([]uint64, 1024), // Preallocate for 65536 bits (1024 * 64 bits = 8K).
+		bitmap:      make([]uint64, 1024), // Preallocate for 65536 bits (1024 * 64 bits = 8K).
 		cardinality: 0,
 	}
 }
@@ -224,8 +224,8 @@ func (bc *BitmapContainer) Add(value uint16) {
 	word := int(value / 64)
 	bit := uint(value % 64)
 
-	if (bc.Bitmap[word] & (1 << bit)) == 0 {
-		bc.Bitmap[word] |= (1 << bit)
+	if (bc.bitmap[word] & (1 << bit)) == 0 {
+		bc.bitmap[word] |= (1 << bit)
 		bc.cardinality++
 	}
 }
@@ -234,7 +234,7 @@ func (bc *BitmapContainer) Add(value uint16) {
 func (bc *BitmapContainer) Contains(value uint16) bool {
 	word := value / 64
 	bit := value % 64
-	return (bc.Bitmap[word] & (1 << bit)) != 0
+	return (bc.bitmap[word] & (1 << bit)) != 0
 }
 
 // Cardinality returns the number of bits set in the bitmap.
@@ -244,13 +244,13 @@ func (bc *BitmapContainer) Cardinality() int {
 
 // Serialize writes the BitmapContainer's data to the provided writer.
 func (bc *BitmapContainer) Serialize(writer io.Writer) error {
-	length := uint32(len(bc.Bitmap))
+	length := uint32(len(bc.bitmap))
 	if err := binary.Write(writer, binary.LittleEndian, length); err != nil {
 		return fmt.Errorf("error while serializing bitmap container length: %v", err)
 	}
 
 	for i := 0; i < int(length); i++ {
-		if err := binary.Write(writer, binary.LittleEndian, bc.Bitmap[i]); err != nil {
+		if err := binary.Write(writer, binary.LittleEndian, bc.bitmap[i]); err != nil {
 			return fmt.Errorf("error while serializing bitmap container: %v", err)
 		}
 	}
@@ -267,9 +267,9 @@ func (bc *BitmapContainer) Deserialize(reader io.Reader) error {
 		return fmt.Errorf("error while deserializing bitmap container length: %v", err)
 	}
 
-	bc.Bitmap = make([]uint64, length)
+	bc.bitmap = make([]uint64, length)
 	for i := 0; i < int(length); i++ {
-		if err := binary.Read(reader, binary.LittleEndian, &bc.Bitmap[i]); err != nil {
+		if err := binary.Read(reader, binary.LittleEndian, &bc.bitmap[i]); err != nil {
 			return fmt.Errorf("error while deserializing bitmap container: %v", err)
 		}
 	}
@@ -279,7 +279,7 @@ func (bc *BitmapContainer) Deserialize(reader io.Reader) error {
 		return fmt.Errorf("error while deserializing bitmap container cardinality: %v", err)
 	}
 	bc.cardinality = 0
-	for _, word := range bc.Bitmap {
+	for _, word := range bc.bitmap {
 		bc.cardinality += bits.OnesCount64(word)
 	}
 
@@ -294,11 +294,11 @@ func (bc *BitmapContainer) Union(other RoaringContainer) RoaringContainer {
 	switch other := other.(type) {
 	case *BitmapContainer:
 		result := NewBitmapContainer()
-		for i := 0; i < len(bc.Bitmap); i++ {
-			result.Bitmap[i] = bc.Bitmap[i] | other.Bitmap[i]
+		for i := 0; i < len(bc.bitmap); i++ {
+			result.bitmap[i] = bc.bitmap[i] | other.bitmap[i]
 		}
 		result.cardinality = 0
-		for _, word := range result.Bitmap {
+		for _, word := range result.bitmap {
 			result.cardinality += bits.OnesCount64(word)
 		}
 		return result
@@ -314,11 +314,11 @@ func (bc *BitmapContainer) Intersection(other RoaringContainer) RoaringContainer
 	switch other := other.(type) {
 	case *BitmapContainer:
 		result := NewBitmapContainer()
-		for i := 0; i < len(bc.Bitmap); i++ {
-			result.Bitmap[i] = bc.Bitmap[i] & other.Bitmap[i]
+		for i := 0; i < len(bc.bitmap); i++ {
+			result.bitmap[i] = bc.bitmap[i] & other.bitmap[i]
 		}
 		result.cardinality = 0
-		for _, word := range result.Bitmap {
+		for _, word := range result.bitmap {
 			result.cardinality += bits.OnesCount64(word)
 		}
 		return result
@@ -340,17 +340,17 @@ func (bc *BitmapContainer) Rank(value uint16) int {
 	wordIndex := int(value / 64)
 	bitPosition := int(value % 64)
 
-	if wordIndex >= len(bc.Bitmap) {
+	if wordIndex >= len(bc.bitmap) {
 		return bc.Cardinality()
 	}
 
 	rank := 0
 	for i := 0; i < wordIndex; i++ {
-		rank += bits.OnesCount64(bc.Bitmap[i])
+		rank += bits.OnesCount64(bc.bitmap[i])
 	}
 
 	mask := (uint64(1) << (bitPosition + 1)) - 1
-	rank += bits.OnesCount64(bc.Bitmap[wordIndex] & mask)
+	rank += bits.OnesCount64(bc.bitmap[wordIndex] & mask)
 	return rank
 }
 
@@ -358,7 +358,7 @@ func (bc *BitmapContainer) Rank(value uint16) int {
 // This is typically called when the container becomes sparse.
 func (bc *BitmapContainer) ToArrayContainer() *ArrayContainer {
 	ac := NewArrayContainer()
-	for i, word := range bc.Bitmap {
+	for i, word := range bc.bitmap {
 		if word != 0 {
 			for bit := 0; bit < 64; bit++ {
 				if (word & (1 << bit)) != 0 {

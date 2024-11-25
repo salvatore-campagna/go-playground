@@ -258,7 +258,7 @@ func TestBitmapContainer_Rank(t *testing.T) {
 
 	for i := 0; i < 1_000; i++ {
 		value := uint16(rand.Intn(1 << 16))
-		expectedRank := calculateExpectedBitmapRank(bc.Bitmap, value)
+		expectedRank := calculateExpectedBitmapRank(bc.bitmap, value)
 		actualRank := bc.Rank(value)
 		if expectedRank != actualRank {
 			t.Errorf("Bitmap container rank(%d) = %d, expected %d", value, actualRank, expectedRank)
