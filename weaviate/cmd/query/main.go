@@ -30,8 +30,7 @@ func main() {
 	}
 
 	var segments []*storage.Segment
-	var totalDocs uint32
-
+	totalDocsBitmap := storage.NewRoaringBitmap()
 	for _, file := range files {
 		if file.IsDir() || filepath.Ext(file.Name()) != ".bin" {
 			continue
@@ -44,7 +43,7 @@ func main() {
 			continue
 		}
 
-		totalDocs += segment.TotalDocs()
+		totalDocsBitmap = totalDocsBitmap.Union(segment.DocIDs)
 		segments = append(segments, segment)
 	}
 
@@ -53,7 +52,9 @@ func main() {
 		return
 	}
 
-	queryEngine, err := engine.NewQueryEngine(segments, totalDocs)
+	totalDocs := totalDocsBitmap.Cardinality()
+	fmt.Printf("Total number of documents: %d\n", totalDocsBitmap.Cardinality())
+	queryEngine, err := engine.NewQueryEngine(segments, uint32(totalDocs))
 	if err != nil {
 		panic(err)
 	}
