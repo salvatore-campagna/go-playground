@@ -127,10 +127,6 @@ func (s *Segment) TotalDocs() uint32 {
 
 // BulkIndex adds a batch of term postings to the segment.
 func (s *Segment) BulkIndex(termPostings []fetcher.TermPosting) error {
-	if len(termPostings) == 0 {
-		return nil
-	}
-
 	for _, termPosting := range termPostings {
 		if !s.DocIDs.Contains(termPosting.DocID) {
 			s.DocIDs.Add(termPosting.DocID)
