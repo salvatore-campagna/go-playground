@@ -221,7 +221,7 @@ func NewBitmapContainer() *BitmapContainer {
 
 // Add sets the bit corresponding to the value in the bitmap.
 func (bc *BitmapContainer) Add(value uint16) {
-	word := int(value / 64)
+	word := uint(value / 64)
 	bit := uint(value % 64)
 
 	if (bc.bitmap[word] & (1 << bit)) == 0 {
