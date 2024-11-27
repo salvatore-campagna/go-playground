@@ -133,7 +133,7 @@ See: [Exercism - Raindrops](https://exercism.org/tracks/go/exercises/raindrops).
 A solution to the **Resistor Color** exercise on Exercism, which involves determining the numeric value associated with resistor color bands. This exercise helps practice working with slices, maps, and basic control flow in Go.
 See: [Exercism - Resistor Color](https://exercism.org/tracks/go/exercises/resistor-color).
 
-### reverse
+### reverse string
 A solution to the **Reverse** exercise, which involves reversing a string while handling multi-byte Unicode characters properly.
 See: [Exercism - Reverse](https://exercism.org/tracks/go/exercises/reverse).
 
