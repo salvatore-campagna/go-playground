@@ -129,6 +129,11 @@ See: [Exercism - Party Robot](https://exercism.org/tracks/go/exercises/party-rob
 A solution to the **Raindrops** exercise, implementing string manipulation based on divisibility rules.  
 See: [Exercism - Raindrops](https://exercism.org/tracks/go/exercises/raindrops).
 
+### resistor-color
+
+A solution to the **Resistor Color** exercise on Exercism, which involves determining the numeric value associated with resistor color bands. This exercise helps practice working with slices, maps, and basic control flow in Go.
+See: [Exercism - Resistor Color](https://exercism.org/tracks/go/exercises/resistor-color).
+
 ### roman-numerals
 A solution to the **Roman Numerals** exercise, converting integers to Roman numeral representations using a greedy algorithm.  
 See: [Exercism - Roman Numerals](https://exercism.org/tracks/go/exercises/roman-numerals).
