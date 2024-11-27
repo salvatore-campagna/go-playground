@@ -141,6 +141,11 @@ See: [Exercism - Reverse](https://exercism.org/tracks/go/exercises/reverse).
 A solution to the **Roman Numerals** exercise, converting integers to Roman numeral representations using a greedy algorithm.  
 See: [Exercism - Roman Numerals](https://exercism.org/tracks/go/exercises/roman-numerals).
 
+### rotational-cipher
+A solution to the **Rotational Cipher** exercise from the Exercism Go track. This exercise implements a Caesar cipher that shifts each letter in the input string by a specified key, wrapping around within the alphabet. Non-alphabetic characters remain unchanged.
+See: [Exercism - Rotational Cipher](https://exercism.org/tracks/go/exercises/rotational-cipher).
+
+
 ### scrabble-score
 A solution to the **Scrabble Score** exercise, calculating word scores based on letter values.  
 See: [Exercism - Scrabble Score](https://exercism.org/tracks/go/exercises/scrabble-score).
