@@ -130,9 +130,12 @@ A solution to the **Raindrops** exercise, implementing string manipulation based
 See: [Exercism - Raindrops](https://exercism.org/tracks/go/exercises/raindrops).
 
 ### resistor-color
-
 A solution to the **Resistor Color** exercise on Exercism, which involves determining the numeric value associated with resistor color bands. This exercise helps practice working with slices, maps, and basic control flow in Go.
 See: [Exercism - Resistor Color](https://exercism.org/tracks/go/exercises/resistor-color).
+
+### reverse
+A solution to the **Reverse** exercise, which involves reversing a string while handling multi-byte Unicode characters properly.
+See: [Exercism - Reverse](https://exercism.org/tracks/go/exercises/reverse).
 
 ### roman-numerals
 A solution to the **Roman Numerals** exercise, converting integers to Roman numeral representations using a greedy algorithm.  
