@@ -26,5 +26,8 @@ var colorCodes = func() map[string]int {
 
 // Value returns the resistance value of a resistor based on the first two color bands.
 func Value(colors []string) int {
+	if len(colors) < 2 {
+		return 0
+	}
 	return colorCodes[colors[0]]*10 + colorCodes[colors[1]]
 }
