@@ -133,6 +133,10 @@ See: [Exercism - Raindrops](https://exercism.org/tracks/go/exercises/raindrops).
 A solution to the **Resistor Color** exercise on Exercism, which involves determining the numeric value associated with resistor color bands. This exercise helps practice working with slices, maps, and basic control flow in Go.
 See: [Exercism - Resistor Color](https://exercism.org/tracks/go/exercises/resistor-color).
 
+### resistor-color-duo
+A solution to the **Resistor Color Duo** exercise from the Exercism Go track. This exercise calculates the resistance value of a resistor based on its first two color bands, using a standard set of resistor color codes.
+See: [Exercism - Resistor Color Duo](https://exercism.org/tracks/go/exercises/resistor-color-duo).
+
 ### reverse string
 A solution to the **Reverse** exercise, which involves reversing a string while handling multi-byte Unicode characters properly.
 See: [Exercism - Reverse](https://exercism.org/tracks/go/exercises/reverse).
@@ -144,7 +148,6 @@ See: [Exercism - Roman Numerals](https://exercism.org/tracks/go/exercises/roman-
 ### rotational-cipher
 A solution to the **Rotational Cipher** exercise from the Exercism Go track. This exercise implements a Caesar cipher that shifts each letter in the input string by a specified key, wrapping around within the alphabet. Non-alphabetic characters remain unchanged.
 See: [Exercism - Rotational Cipher](https://exercism.org/tracks/go/exercises/rotational-cipher).
-
 
 ### scrabble-score
 A solution to the **Scrabble Score** exercise, calculating word scores based on letter values.  
