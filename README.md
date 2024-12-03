@@ -58,6 +58,10 @@ See: [Exercism - Difference of Squares](https://exercism.org/tracks/go/exercises
 A solution to the **Election Day** exercise on Exercism, which involves managing election votes and results. The solution includes functionalities for handling vote counters, creating and displaying election results, and updating vote counts in a map of candidates.
 See: [Exercism - Election Day](https://exercism.org/tracks/go/exercises/election-day).
 
+### elons-toys
+A solution to the **Elon's Toys** exercise on Exercism, which simulates the behavior of a toy car. The solution includes functionality to drive the car, display its current battery and distance, and determine whether it can complete a given track.
+See: [Exercism - Elon's Toys](https://exercism.org/tracks/go/exercises/elons-toys).
+
 ### etl
 A solution to the **ETL** exercise, focusing on transforming data formats from a legacy scoring system to a modern format.  
 See: [Exercism - ETL](https://exercism.org/tracks/go/exercises/etl).
