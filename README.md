@@ -204,3 +204,6 @@ See: [Exercism - Word Count](https://exercism.org/tracks/go/exercises/word-count
 - [Pointer vs Value Methods](https://gronskiy.com/posts/2020-04-golang-pointer-vs-value-methods/)
 - [Go Language Specification](https://go.dev/ref/spec#Method_sets)
 - [Preemptive Interface Anti-Pattern in Go](https://medium.com/@cep21/preemptive-interface-anti-pattern-in-go-54c18ac0668a)
+- [Arrays, slices (and strings) - The mechanics of 'append'](https://go.dev/blog/slices)
+- [The Go Blog](https://go.dev/blog/all)
+- [Resources for new Go programmers](https://dave.cheney.net/resources-for-new-go-programmers)
