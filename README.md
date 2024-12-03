@@ -4,6 +4,10 @@ This repository contains various Go exercises and projects that I’ve worked on
 
 ## Projects
 
+### airport-robot
+A solution to the **Airport Robot** exercise on Exercism, which simulates a multilingual airport greeter system. The solution uses an interface to support greetings in multiple languages, allowing dynamic language selection for visitor greetings.
+See: [Exercism - Airport Robot](https://exercism.org/tracks/go/exercises/airport-robot).
+
 ### animal-magic
 A solution to the **Animal Magic** exercise on Exercism, which deals with string manipulation and Go's handling of Unicode characters.  
 See: [Exercism - Animal Magic](https://exercism.org/tracks/go/exercises/animal-magic).
