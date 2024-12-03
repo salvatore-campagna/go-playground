@@ -54,6 +54,10 @@ See: [Exercism - Darts](https://exercism.org/tracks/go/exercises/darts).
 A solution to the **Difference of Squares** exercise, focusing on basic arithmetic and loops.  
 See: [Exercism - Difference of Squares](https://exercism.org/tracks/go/exercises/difference-of-squares).
 
+### election-day
+A solution to the **Election Day** exercise on Exercism, which involves managing election votes and results. The solution includes functionalities for handling vote counters, creating and displaying election results, and updating vote counts in a map of candidates.
+See: [Exercism - Election Day](https://exercism.org/tracks/go/exercises/election-day).
+
 ### etl
 A solution to the **ETL** exercise, focusing on transforming data formats from a legacy scoring system to a modern format.  
 See: [Exercism - ETL](https://exercism.org/tracks/go/exercises/etl).
