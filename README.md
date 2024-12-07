@@ -179,6 +179,11 @@ A solution to the **Strain** exercise on Exercism, which involves filtering slic
 This exercise demonstrates the use of Go's generics to implement flexible and reusable filtering functions.
 See: [Exercism - Strain](https://exercism.org/tracks/go/exercises/strain).
 
+### triangle
+
+A solution to the **Triangle** exercise on Exercism, determining the type of a triangle (equilateral, isosceles, scalene, or not a triangle) based on the lengths of its sides.
+See: [Exercism - Triangle](https://exercism.org/tracks/go/exercises/triangle).
+
 ### two-fer
 A solution to the **Two Fer** exercise, focusing on functions and string interpolation.  
 See: [Exercism - Two Fer](https://exercism.org/tracks/go/exercises/two-fer).
