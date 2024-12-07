@@ -101,6 +101,10 @@ See: [Exercism - ISBN Verifier](https://exercism.org/tracks/go/exercises/isbn-ve
 A solution to the **Isogram** exercise, identifying whether a word contains repeating letters.  
 See: [Exercism - Isogram](https://exercism.org/tracks/go/exercises/isogram).
 
+### largest-series-product
+A solution to the **Largest Series Product** exercise on Exercism, calculating the largest product for a contiguous substring of digits with a specified span.
+See: [Exercism - Largest Series Product](https://exercism.org/tracks/go/exercises/la
+
 ### lasagna
 A solution to the **Gopher's Gorgeous Lasagna** exercise, practicing functions and return values.  
 See: [Exercism - Lasagna](https://exercism.org/tracks/go/exercises/lasagna).
@@ -166,7 +170,6 @@ A solution to the **Scrabble Score** exercise, calculating word scores based on 
 See: [Exercism - Scrabble Score](https://exercism.org/tracks/go/exercises/scrabble-score).
 
 ### sieve
-
 A solution to the **Sieve** exercise on Exercism, implementing the Sieve of Eratosthenes algorithm to find all prime numbers up to a given limit.
 See: [Exercism - Sieve](https://exercism.org/tracks/go/exercises/sieve).
 
