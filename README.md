@@ -165,6 +165,11 @@ See: [Exercism - Rotational Cipher](https://exercism.org/tracks/go/exercises/rot
 A solution to the **Scrabble Score** exercise, calculating word scores based on letter values.  
 See: [Exercism - Scrabble Score](https://exercism.org/tracks/go/exercises/scrabble-score).
 
+### sieve
+
+A solution to the **Sieve** exercise on Exercism, implementing the Sieve of Eratosthenes algorithm to find all prime numbers up to a given limit.
+See: [Exercism - Sieve](https://exercism.org/tracks/go/exercises/sieve).
+
 ### simple-cipher
 A solution to the **Simple Cipher** exercise, implementing Caesar, Shift, and Vigenère ciphers for encoding/decoding text.  
 See: [Exercism - Simple Cipher](https://exercism.org/tracks/go/exercises/simple-cipher).
