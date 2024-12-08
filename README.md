@@ -149,6 +149,10 @@ See: [Exercism - Pangram](https://exercism.org/tracks/go/exercises/pangram).
 A solution to the **Party Robot** exercise, practicing string formatting and control flow.  
 See: [Exercism - Party Robot](https://exercism.org/tracks/go/exercises/party-robot).
 
+### prime-factors
+A solution to the **Prime Factors** exercise on Exercism, which computes the prime factorization of an integer. The function identifies all prime factors and returns them in ascending order.
+See: [Exercism - Prime Factors](https://exercism.org/tracks/go/exercises/prime-factors).
+
 ### raindrops
 A solution to the **Raindrops** exercise, implementing string manipulation based on divisibility rules.  
 See: [Exercism - Raindrops](https://exercism.org/tracks/go/exercises/raindrops).
