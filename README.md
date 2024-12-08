@@ -129,6 +129,10 @@ See: [Exercism - Logs, Logs, Logs](https://exercism.org/tracks/go/exercises/logs
 A solution to the **Luhn** exercise, implementing the Luhn algorithm for validating credit card numbers.  
 See: [Exercism - Luhn](https://exercism.org/tracks/go/exercises/luhn).
 
+### meteorology
+A solution to the **Meteorology** exercise on Exercism, representing meteorological data such as temperature, wind speed, and humidity, with formatted string output.
+See: [Exercism - Meteorology](https://exercism.org/tracks/go/exercises/meteorology).
+
 ### need-for-speed
 A solution to the **Need For Speed** exercise, simulating a racing car with different speeds and fuel levels.  
 See: [Exercism - Need For Speed](https://exercism.org/tracks/go/exercises/need-for-speed).
