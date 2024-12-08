@@ -185,6 +185,10 @@ See: [Exercism - Sieve](https://exercism.org/tracks/go/exercises/sieve).
 A solution to the **Simple Cipher** exercise, implementing Caesar, Shift, and Vigenère ciphers for encoding/decoding text.  
 See: [Exercism - Simple Cipher](https://exercism.org/tracks/go/exercises/simple-cipher).
 
+### sorting
+A solution to the **Sorting Room** exercise on Exercism, which involves implementing utility functions to describe numbers, handle interfaces like `NumberBox` and `FancyNumberBox`, and process inputs of varying types.
+See: [Exercism - Sorting Room](https://exercism.org/tracks/go/exercises/sorting-room).
+
 ### strain
 A solution to the **Strain** exercise on Exercism, which involves filtering slices based on a predicate function.
 This exercise demonstrates the use of Go's generics to implement flexible and reusable filtering functions.
